@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Example</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="canvas" resize keepalive="true"></canvas>
+  <script type="text/javascript" src="paper.js"></script>
+  <script type="text/javascript" src="pazy.min.js"></script>
+  <script type="text/javascript" src="delaunay.js"></script>
+  <script type="text/paperscript" canvas="canvas">
+    var Seq   = pazy.Sequence,
+        P2    = pazy.Point2d,
+        build = pazy.delaunayTriangulation,
+        dots  = [],
+        current;
+
+    function makeDelaunay() {
+      var t = Seq.reduce(dots, build(), function(s, p) {
+        return s.plus(new P2(p.position.x, p.position.y));
+      });
+    }
+
+    function onMouseDown(event) {
+      var found = Seq.find(dots, function(d) {
+        return (event.point - d.position).length < 10;
+      });
+      current = found || new Path.Circle(event.point, 5);
+      current.fillColor = 'red';
+      current.strokeColor = 'black';
+      if (found == null) { dots = dots.concat([current]); }
+      makeDelaunay();
+    }
+
+    function onMouseDrag(event) {
+      current.position = event.point;
+    }
+
+    function onMouseUp(event) {
+      current.fillColor = 'blue';
+    }
+  </script>
+</body>
+</html>
