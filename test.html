@@ -9,37 +9,87 @@
   <canvas id="canvas" resize keepalive="true"></canvas>
   <script type="text/javascript" src="paper.js"></script>
   <script type="text/javascript" src="pazy.min.js"></script>
-  <script type="text/javascript" src="delaunay.js"></script>
   <script type="text/paperscript" canvas="canvas">
-    var Seq   = pazy.Sequence,
-        P2    = pazy.Point2d,
-        build = pazy.delaunayTriangulation,
-        dots  = [],
-        current;
+    var Seq      = pazy.Sequence,
+        vertices = new pazy.IntMap(),
+        edges    = new pazy.HashMap(),
+        lastPoint,
+        lastLine;
 
-    function makeDelaunay() {
-      var t = Seq.reduce(dots, build(), function(s, p) {
-        return s.plus(new P2(p.position.x, p.position.y));
+    alert("Click makes a vertex, drag moves, shift-click deletes, " +
+          "ctrl-drag makes an edge.");
+
+    function find(point) {
+      var points = Seq.map(vertices, function(d) {
+        return d[1];
       });
+      return Seq.find(points, function(d) {
+        return (point - d.position).length < 10;
+      });
+    }
+
+    function newVertex(position) {
+      var p = new Path.Circle(position, 5);
+      p.fillColor = 'blue';
+      p.strokeColor = 'black';
+      vertices = vertices.plus([p.id, p]);
+      return p;
     }
 
     function onMouseDown(event) {
-      var found = Seq.find(dots, function(d) {
-        return (event.point - d.position).length < 10;
-      });
-      current = found || new Path.Circle(event.point, 5);
-      current.fillColor = 'red';
-      current.strokeColor = 'black';
-      if (found == null) { dots = dots.concat([current]); }
-      makeDelaunay();
+      lastPoint = find(event.point) || newVertex(event.point);
+      lastPoint.fillColor = 'red';
+
+      if (event.modifiers.control) {
+        lastLine = new Path.Line(lastPoint.position, event.point);
+        lastLine.strokeColor = 'black';
+      } else if (event.modifiers.shift) {
+        var obsolete = Seq.select(edges, function(item) {
+          return item[0][0] == lastPoint.id || item[0][1] == lastPoint.id;
+        });
+        Seq.each(obsolete, function(item) {
+          item[1].remove();
+        });
+        edges = edges.minusAll(Seq.map(obsolete, function(item) {
+          return item[0];
+        }));
+        lastPoint.remove();
+        lastPoint = null;
+      }
     }
 
     function onMouseDrag(event) {
-      current.position = event.point;
+      var here = event.point;
+
+      if (lastLine) {
+        lastLine.lastSegment.point = here;
+      } else if (lastPoint) {
+        lastPoint.position = here;
+        Seq.each(edges, function(item) {
+          var s = item[0][0], t = item[0][1], e = item[1];
+          if (s == lastPoint.id) {
+            e.firstSegment.point = here;
+          } else if (t == lastPoint.id) {
+            e.lastSegment.point = here;
+          }
+        });
+      }
     }
 
     function onMouseUp(event) {
-      current.fillColor = 'blue';
+      if (lastLine) {
+        var target = find(event.point) || newVertex(event.point);
+        if (lastPoint.id != target.id) {
+          edges = edges.plus([[lastPoint.id, target.id], lastLine]);
+          lastLine.lastSegment.point = target.position;
+        } else {
+          lastLine.remove();
+        }
+        lastLine = null;
+      }
+      if (lastPoint) {
+        lastPoint.fillColor = 'blue';
+      }
     }
   </script>
 </body>
