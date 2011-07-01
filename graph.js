@@ -7,7 +7,7 @@ var Seq      = pazy.Sequence,
     moved    = false;
 
 alert("NEW RULES: Click makes a vertex, drag moves, two clicks delete, " +
-      "click-drag makes an edge.");
+      "click-release-drag makes an edge.");
 
 function find(point) {
   var points = Seq.map(vertices, function(d) {
