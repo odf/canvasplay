@@ -104,6 +104,7 @@ function onMouseUp(event) {
   } else if (lastPoint && !dragged) {
     lastLine = new Path.Line(lastPoint.position, lastPoint.position);
     lastLine.strokeColor = 'black';
+    lastPoint.fillColor = 'yellow';
   } else {
     lastPoint = null;
   }
