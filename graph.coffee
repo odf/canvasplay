@@ -13,7 +13,6 @@ dragged    = false
 moved      = false
 down       = false
 active     = null
-nextId     = 1
 
 
 nextId = do -> last = 0; -> last += 1
@@ -37,8 +36,6 @@ deleteVertex = (pid) ->
 
 moveVertex = (pid, x, y) -> vertices = vertices.plus [pid, [x, y]]
 
-highlightActiveVertex = (x, y) -> active = find x, y
-
 
 draw = ->
   return unless dirty
@@ -47,18 +44,15 @@ draw = ->
   ctx.clearRect 0, 0, canvas.width, canvas.height
 
   if rubberLine
-    [[x1, y1], [x2, y2]] = rubberLine
     ctx.beginPath
-    ctx.moveTo x1, y1
-    ctx.lineTo x2, y2
+    ctx.moveTo rubberLine[0]...
+    ctx.lineTo rubberLine[1]...
     ctx.stroke()
 
   edges.each ([id, [from, to]]) ->
-    [x1, y1] = vertices.get from
-    [x2, y2] = vertices.get to
     ctx.beginPath
-    ctx.moveTo x1, y1
-    ctx.lineTo x2, y2
+    ctx.moveTo vertices.get(from)...
+    ctx.lineTo vertices.get(to)...
     ctx.stroke()
 
   vertices.each ([id, [x, y]]) ->
@@ -74,7 +68,7 @@ handlers =
   canvas:
     mousemove: (e) ->
       [x, y] = position e
-      highlightActiveVertex x, y
+      active = find x, y
       dirty = true
 
       if down
@@ -85,14 +79,13 @@ handlers =
           moveVertex lastPoint, x, y
       else
         moved = true
-        highlightActiveVertex x, y
 
     mousedown: (e) ->
       [x, y] = position e
       down = true
       dirty = true
 
-      rubberLine = null if lastPoint && moved
+      rubberLine = null if moved
       lastPoint = find(x, y) or newVertex x, y
       dragged = moved = false
 
