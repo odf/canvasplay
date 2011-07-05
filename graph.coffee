@@ -7,7 +7,7 @@ dirty      = false
 Seq        = pazy.Sequence
 vertices   = new pazy.IntMap()
 edges      = new pazy.IntMap()
-lastPoint  = null
+source  = null
 rubberLine = null
 dragged    = false
 moved      = false
@@ -69,45 +69,40 @@ handlers =
     mousemove: (e) ->
       [x, y] = position e
       active = find x, y
-      dirty = true
+      moved = dirty = true
 
       if down
-        dragged = true
         if rubberLine
           rubberLine[1] = [x, y]
-        else if lastPoint
-          moveVertex lastPoint, x, y
-      else
-        moved = true
+        else if source
+          moveVertex source, x, y
 
     mousedown: (e) ->
       [x, y] = position e
-      down = true
-      dirty = true
+      down = dirty = true
 
       rubberLine = null if moved
-      lastPoint = find(x, y) or newVertex x, y
-      dragged = moved = false
+      source = find(x, y) or newVertex x, y
+      moved = false
 
     mouseup: (e) ->
       down = false
       [x, y] = position e
       dirty = true
 
-      if rubberLine? and not dragged
-        deleteVertex lastPoint if lastPoint
-        lastPoint = rubberLine = null
+      if rubberLine? and not moved
+        deleteVertex source if source
+        source = rubberLine = null
       else if rubberLine
         target = find(x, y) or newVertex x, y
-        if lastPoint != target
-          edges = edges.plus [nextId(), [lastPoint, target]]
+        edges = edges.plus [nextId(), [source, target]] if source != target
         rubberLine = null
-      else if lastPoint and not dragged
-        pos = vertices.get lastPoint
+      else if source and not moved
+        pos = vertices.get source
         rubberLine = [pos, pos]
       else
-        lastPoint = null
-      dragged = moved = false
+        source = null
+      moved = false
 
 
 $(document).ready ->
