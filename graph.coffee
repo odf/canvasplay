@@ -1,18 +1,19 @@
 $ = jQuery
 
-canvas     = null
-ctx        = null
-dirty      = false
-
 Seq        = pazy.Sequence
 vertices   = new pazy.IntMap()
 edges      = new pazy.IntMap()
-source  = null
+
+canvas     = null
+ctx        = null
+
+source     = null
+active     = null
 rubberLine = null
-dragged    = false
+
 moved      = false
 down       = false
-active     = null
+dirty      = false
 
 
 nextId = do -> last = 0; -> last += 1
@@ -27,6 +28,11 @@ find = (x, y) -> Seq.find(vertices, ([id, p]) -> dist([x, y], p) < 10)?[0]
 newVertex = (x, y) ->
   id = nextId()
   vertices = vertices.plus [id, [x, y]]
+  id
+
+newEdge = (from, to) ->
+  id = nextId()
+  edges = edges.plus [id, [from, to]]
   id
 
 deleteVertex = (pid) ->
@@ -95,7 +101,7 @@ handlers =
         source = rubberLine = null
       else if rubberLine
         target = find(x, y) or newVertex x, y
-        edges = edges.plus [nextId(), [source, target]] if source != target
+        newEdge source, target if source != target
         rubberLine = null
       else if source and not moved
         pos = vertices.get source
@@ -110,6 +116,6 @@ $(document).ready ->
     if this.getContext
       canvas = this
       ctx = this.getContext '2d'
-      setInterval draw, 50
+      setInterval draw, 100
 
       $(this).bind handlers.canvas
