@@ -9,6 +9,7 @@ ctx        = null
 
 source     = null
 active     = null
+temporary  = null
 rubberLine = null
 
 moved      = false
@@ -58,7 +59,7 @@ newEdge = (from, to) ->
   id
 
 deleteVertex = (pid) ->
-  obsolete = Seq.select edges, ([eid, [from, to]]) -> from == pid or to == pid
+  obsolete = Seq.select edges, ([eid, e]) -> pid in e
   edges = edges.minusAll obsolete?.map ([eid, ends]) -> eid
   vertices = vertices.minus pid
 
@@ -72,9 +73,18 @@ splitEdgeAt = (x, y) ->
     [from, to] = edges.get eid
     deleteEdge eid
     p = newVertex nearestOnEdge([x, y], [from, to])...
+    temporary = p
     newEdge from, p
     newEdge p, to
     p
+
+cleanupTemporary = ->
+  if temporary
+    [u, v] = Seq.select(edges, ([id, e]) -> temporary in e).
+      map(([id, [from, to]]) -> if from != temporary then from else to).into []
+    deleteVertex temporary
+    newEdge u, v
+    temporary = null
 
 vertexAt = (x, y) -> findVertex(x, y) or splitEdgeAt(x, y) or newVertex(x, y)
 
@@ -100,12 +110,13 @@ draw = ->
     ctx.stroke()
 
   vertices.each ([id, [x, y]]) ->
-    ctx.beginPath()
-    ctx.arc x, y, 5, 0, Math.PI * 2, true
-    ctx.strokeStyle = 'black'
-    ctx.stroke()
-    ctx.fillStyle = if id == active then 'rgb(200,0,0)' else 'rgb(0,0,200)'
-    ctx.fill()
+    unless id == temporary
+      ctx.beginPath()
+      ctx.arc x, y, 5, 0, Math.PI * 2, true
+      ctx.strokeStyle = 'black'
+      ctx.stroke()
+      ctx.fillStyle = if id == active then 'rgb(200,0,0)' else 'rgb(0,0,200)'
+      ctx.fill()
 
   if tmp
     [x, y] = tmp
@@ -123,10 +134,13 @@ handlers =
       active = findVertex(x, y) or findEdge(x, y)
 
       if down
+        temporary = null
         if rubberLine
           rubberLine[1] = [x, y]
         else if source
           moveVertex source, x, y
+      else
+        cleanupTemporary()
 
     mousedown: (e) ->
       [x, y] = position e
@@ -143,11 +157,11 @@ handlers =
 
       if rubberLine? and not moved
         deleteVertex source if source
-        source = rubberLine = null
+        source = rubberLine = temporary = null
       else if rubberLine
         target = vertexAt x, y
         newEdge source, target if source != target
-        rubberLine = null
+        rubberLine = temporary = null
       else if source and not moved
         pos = vertices.get source
         rubberLine = [pos, pos]

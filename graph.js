@@ -1,5 +1,11 @@
 (function() {
-  var $, Seq, active, canvas, ctx, deleteEdge, deleteVertex, dirty, distFromEdge, distFromVertex, dot, down, draw, edges, findEdge, findVertex, handlers, minus, moveVertex, moved, nearestOnEdge, newEdge, newVertex, nextId, plus, position, rubberLine, source, splitEdgeAt, square, times, vertexAt, vertices;
+  var $, Seq, active, canvas, cleanupTemporary, ctx, deleteEdge, deleteVertex, dirty, distFromEdge, distFromVertex, dot, down, draw, edges, findEdge, findVertex, handlers, minus, moveVertex, moved, nearestOnEdge, newEdge, newVertex, nextId, plus, position, rubberLine, source, splitEdgeAt, square, temporary, times, vertexAt, vertices;
+  var __indexOf = Array.prototype.indexOf || function(item) {
+    for (var i = 0, l = this.length; i < l; i++) {
+      if (this[i] === item) return i;
+    }
+    return -1;
+  };
   $ = jQuery;
   Seq = pazy.Sequence;
   vertices = new pazy.IntMap();
@@ -8,6 +14,7 @@
   ctx = null;
   source = null;
   active = null;
+  temporary = null;
   rubberLine = null;
   moved = false;
   down = false;
@@ -100,9 +107,9 @@
   deleteVertex = function(pid) {
     var obsolete;
     obsolete = Seq.select(edges, function(_arg) {
-      var eid, from, to, _ref;
-      eid = _arg[0], _ref = _arg[1], from = _ref[0], to = _ref[1];
-      return from === pid || to === pid;
+      var e, eid;
+      eid = _arg[0], e = _arg[1];
+      return __indexOf.call(e, pid) >= 0;
     });
     edges = edges.minusAll(obsolete != null ? obsolete.map(function(_arg) {
       var eid, ends;
@@ -124,9 +131,31 @@
       _ref = edges.get(eid), from = _ref[0], to = _ref[1];
       deleteEdge(eid);
       p = newVertex.apply(null, nearestOnEdge([x, y], [from, to]));
+      temporary = p;
       newEdge(from, p);
       newEdge(p, to);
       return p;
+    }
+  };
+  cleanupTemporary = function() {
+    var u, v, _ref;
+    if (temporary) {
+      _ref = Seq.select(edges, function(_arg) {
+        var e, id;
+        id = _arg[0], e = _arg[1];
+        return __indexOf.call(e, temporary) >= 0;
+      }).map(function(_arg) {
+        var from, id, to, _ref;
+        id = _arg[0], _ref = _arg[1], from = _ref[0], to = _ref[1];
+        if (from !== temporary) {
+          return from;
+        } else {
+          return to;
+        }
+      }).into([]), u = _ref[0], v = _ref[1];
+      deleteVertex(temporary);
+      newEdge(u, v);
+      return temporary = null;
     }
   };
   vertexAt = function(x, y) {
@@ -158,12 +187,14 @@
     vertices.each(function(_arg) {
       var id, x, y, _ref;
       id = _arg[0], _ref = _arg[1], x = _ref[0], y = _ref[1];
-      ctx.beginPath();
-      ctx.arc(x, y, 5, 0, Math.PI * 2, true);
-      ctx.strokeStyle = 'black';
-      ctx.stroke();
-      ctx.fillStyle = id === active ? 'rgb(200,0,0)' : 'rgb(0,0,200)';
-      return ctx.fill();
+      if (id !== temporary) {
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2, true);
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+        ctx.fillStyle = id === active ? 'rgb(200,0,0)' : 'rgb(0,0,200)';
+        return ctx.fill();
+      }
     });
     if (tmp) {
       x = tmp[0], y = tmp[1];
@@ -183,11 +214,14 @@
         moved = dirty = true;
         active = findVertex(x, y) || findEdge(x, y);
         if (down) {
+          temporary = null;
           if (rubberLine) {
             return rubberLine[1] = [x, y];
           } else if (source) {
             return moveVertex(source, x, y);
           }
+        } else {
+          return cleanupTemporary();
         }
       },
       mousedown: function(e) {
@@ -209,13 +243,13 @@
           if (source) {
             deleteVertex(source);
           }
-          source = rubberLine = null;
+          source = rubberLine = temporary = null;
         } else if (rubberLine) {
           target = vertexAt(x, y);
           if (source !== target) {
             newEdge(source, target);
           }
-          rubberLine = null;
+          rubberLine = temporary = null;
         } else if (source && !moved) {
           pos = vertices.get(source);
           rubberLine = [pos, pos];
