@@ -1,5 +1,5 @@
 (function() {
-  var $, Seq, active, canvas, cleanupTemporary, ctx, deleteEdge, deleteVertex, dirty, distFromEdge, distFromVertex, dot, down, draw, edges, findEdge, findVertex, handlers, minus, moveVertex, moved, nearestOnEdge, newEdge, newVertex, nextId, plus, position, rubberLine, source, splitEdgeAt, square, temporary, times, vertexAt, vertices;
+  var $, Seq, active, canvas, cleanupTemporary, connectTemporary, ctx, deleteEdge, deleteEdgeAtTemporary, deleteVertex, dirty, distFromEdge, distFromVertex, dot, down, draw, edges, findEdge, findVertex, handlers, minus, moveVertex, moved, nearestOnEdge, newEdge, newVertex, nextId, onEdge, plus, position, rubberLine, source, square, temporary, times, vertexAt, vertices;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
@@ -124,42 +124,37 @@
   moveVertex = function(pid, x, y) {
     return vertices = vertices.plus([pid, [x, y]]);
   };
-  splitEdgeAt = function(x, y) {
-    var eid, from, p, to, _ref;
-    eid = findEdge(x, y);
-    if (eid) {
-      _ref = edges.get(eid), from = _ref[0], to = _ref[1];
-      deleteEdge(eid);
-      p = newVertex.apply(null, nearestOnEdge([x, y], [from, to]));
-      temporary = p;
-      newEdge(from, p);
-      newEdge(p, to);
-      return p;
+  onEdge = function(x, y) {
+    var eid;
+    if (eid = findEdge(x, y)) {
+      return temporary = newVertex.apply(null, nearestOnEdge([x, y], edges.get(eid)));
     }
   };
   cleanupTemporary = function() {
-    var u, v, _ref;
     if (temporary) {
-      _ref = Seq.select(edges, function(_arg) {
-        var e, id;
-        id = _arg[0], e = _arg[1];
-        return __indexOf.call(e, temporary) >= 0;
-      }).map(function(_arg) {
-        var from, id, to, _ref;
-        id = _arg[0], _ref = _arg[1], from = _ref[0], to = _ref[1];
-        if (from !== temporary) {
-          return from;
-        } else {
-          return to;
-        }
-      }).into([]), u = _ref[0], v = _ref[1];
       deleteVertex(temporary);
-      newEdge(u, v);
+      if (source === temporary) {
+        source = null;
+      }
       return temporary = null;
     }
   };
+  connectTemporary = function() {
+    var eid, from, to, _ref;
+    if (temporary) {
+      eid = findEdge.apply(null, vertices.get(temporary));
+      _ref = edges.get(eid), from = _ref[0], to = _ref[1];
+      deleteEdge(eid);
+      newEdge(from, temporary);
+      newEdge(temporary, to);
+      return temporary = null;
+    }
+  };
+  deleteEdgeAtTemporary = function() {
+    return deleteEdge(findEdge.apply(null, vertices.get(temporary)));
+  };
   vertexAt = function(x, y) {
-    return findVertex(x, y) || splitEdgeAt(x, y) || newVertex(x, y);
+    return temporary || findVertex(x, y) || onEdge(x, y) || newVertex(x, y);
   };
   draw = function() {
     var tmp, x, y;
@@ -187,7 +182,9 @@
     vertices.each(function(_arg) {
       var id, x, y, _ref;
       id = _arg[0], _ref = _arg[1], x = _ref[0], y = _ref[1];
-      if (id !== temporary) {
+      if (id === temporary) {
+        ;
+      } else {
         ctx.beginPath();
         ctx.arc(x, y, 5, 0, Math.PI * 2, true);
         ctx.strokeStyle = 'black';
@@ -214,7 +211,7 @@
         moved = dirty = true;
         active = findVertex(x, y) || findEdge(x, y);
         if (down) {
-          temporary = null;
+          connectTemporary();
           if (rubberLine) {
             return rubberLine[1] = [x, y];
           } else if (source) {
@@ -239,17 +236,23 @@
         down = false;
         _ref = position(e), x = _ref[0], y = _ref[1];
         dirty = true;
-        if ((rubberLine != null) && !moved) {
+        if (rubberLine && !moved) {
           if (source) {
-            deleteVertex(source);
+            if (source === temporary) {
+              deleteEdgeAtTemporary();
+            } else {
+              deleteVertex(source);
+            }
           }
-          source = rubberLine = temporary = null;
+          source = rubberLine = null;
+          cleanupTemporary();
         } else if (rubberLine) {
           target = vertexAt(x, y);
+          connectTemporary();
           if (source !== target) {
             newEdge(source, target);
           }
-          rubberLine = temporary = null;
+          rubberLine = null;
         } else if (source && !moved) {
           pos = vertices.get(source);
           rubberLine = [pos, pos];
