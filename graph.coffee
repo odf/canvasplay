@@ -31,19 +31,21 @@ dot = ([x1, y1], [x2, y2]) -> x1*x2 + y1*y2
 distFromVertex = ([x1, y1], [x2, y2]) ->
   Math.sqrt square(x2 - x1) + square(y2 - y1)
 
-distFromEdge = (p, [from, to]) ->
+nearestOnEdge = (p, [from, to]) ->
   v = vertices.get from
   w = vertices.get to
   d = minus w, v
   f = dot(d, minus p, v) / dot(d, d)
-  q = if f < 0 then v else if f > 1 then w else plus v, times f, d
-  distFromVertex p, q
+  if f < 0 then v else if f > 1 then w else plus v, times f, d
+
+distFromEdge = (p, e) -> distFromVertex p, nearestOnEdge p, e
 
 
-find = (x, y) ->
-  item = Seq.find(vertices, ([id, p]) -> distFromVertex([x, y], p) < 10) or
-         Seq.find(edges, ([id, e]) -> distFromEdge([x, y], e) < 10)
-  item?[0]
+findVertex = (x, y) ->
+  Seq.find(vertices, ([id, p]) -> distFromVertex([x, y], p) < 10)?[0]
+
+findEdge = (x, y) ->
+  Seq.find(edges, ([id, e]) -> distFromEdge([x, y], e) < 10)?[0]
 
 newVertex = (x, y) ->
   id = nextId()
@@ -60,7 +62,21 @@ deleteVertex = (pid) ->
   edges = edges.minusAll obsolete?.map ([eid, ends]) -> eid
   vertices = vertices.minus pid
 
+deleteEdge = (eid) -> edges = edges.minus eid
+
 moveVertex = (pid, x, y) -> vertices = vertices.plus [pid, [x, y]]
+
+splitEdgeAt = (x, y) ->
+  eid = findEdge x, y
+  if eid
+    [from, to] = edges.get eid
+    deleteEdge eid
+    p = newVertex nearestOnEdge([x, y], [from, to])...
+    newEdge from, p
+    newEdge p, to
+    p
+
+vertexAt = (x, y) -> findVertex(x, y) or splitEdgeAt(x, y) or newVertex(x, y)
 
 
 draw = ->
@@ -103,8 +119,8 @@ handlers =
   canvas:
     mousemove: (e) ->
       [x, y] = position e
-      active = find x, y
       moved = dirty = true
+      active = findVertex(x, y) or findEdge(x, y)
 
       if down
         if rubberLine
@@ -117,7 +133,7 @@ handlers =
       down = dirty = true
 
       rubberLine = null if moved
-      source = find(x, y) or newVertex x, y
+      source = vertexAt x, y
       moved = false
 
     mouseup: (e) ->
@@ -129,7 +145,7 @@ handlers =
         deleteVertex source if source
         source = rubberLine = null
       else if rubberLine
-        target = find(x, y) or newVertex x, y
+        target = vertexAt x, y
         newEdge source, target if source != target
         rubberLine = null
       else if source and not moved
