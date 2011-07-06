@@ -241,12 +241,15 @@
         var c, d, pa, pb, pc, pd, _ref4;
         c = this.third(a, b);
         d = this.third(b, a);
-        if ((a < 0 && b < 0) || !(c != null) || !(d != null) || c < 0 || d < 0) {
+        trace("  mustFlip " + a + ", " + b + " - c = " + c + ". d = " + d);
+        if ((a < 0 && b < 0) || !(c != null) || !(d != null)) {
           return false;
         } else if (a < 0) {
           return this.sideOf(d, c, this.position(b)) > 0;
         } else if (b < 0) {
           return this.sideOf(c, d, this.position(a)) > 0;
+        } else if (c < 0 || d < 0) {
+          return false;
         } else {
           _ref4 = seq(a, b, c, d).map(__bind(function(x) {
             return this.position(x);
@@ -336,7 +339,7 @@
     rnd = function() {
       return Math.floor(Math.random() * 100);
     };
-    t = Sequence.range(1, 200).reduce(delaunayTriangulation(), function(s, i) {
+    t = Sequence.range(1, 1000).reduce(delaunayTriangulation(), function(s, i) {
       return s.plus(new Point2d(rnd(), rnd()));
     });
     return Sequence.each(t, function(triangle) {
