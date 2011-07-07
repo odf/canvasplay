@@ -114,9 +114,6 @@
     var x, y, _ref;
     _ref = position(e), x = _ref[0], y = _ref[1];
     active = findSite(x, y);
-    if (down && source) {
-      moveSite(source, x, y);
-    }
     return [x, y];
   };
   handlers = {
