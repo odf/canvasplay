@@ -3,6 +3,7 @@ $ = jQuery
 Seq      = pazy.Sequence
 sites    = new  pazy.IntMap()
 delaunay = pazy.delaunayTriangulation()
+center   = pazy.circumCircleCenter
 Point    = pazy.Point2d
 
 canvas   = null
@@ -21,11 +22,10 @@ nextId = do -> last = 0; -> last += 1
 
 square = (x) -> x * x
 
-distFromSite = ([x1, y1], [x2, y2]) ->
-  Math.sqrt square(x2 - x1) + square(y2 - y1)
+distance = ([x1, y1], [x2, y2]) -> Math.sqrt square(x2 - x1) + square(y2 - y1)
 
 findSite = (x, y) ->
-  Seq.find(sites, ([id, p]) -> distFromSite([x, y], p) < 10)?[0]
+  Seq.find(sites, ([id, p]) -> distance([x, y], p) < 10)?[0]
 
 newSite = (x, y) ->
   id = nextId()
@@ -37,28 +37,59 @@ moveSite = (pid, x, y) -> sites = sites.plus [pid, [x, y]]
 
 siteAt = (x, y) -> findSite(x, y) or newSite(x, y)
 
+circleSpecs = (triangulation, a, b, c) ->
+  u = triangulation.position a
+  v = triangulation.position b
+  w = triangulation.position c
+  s = center u, v, w
+  [s, distance [u.x, u.y], [s.x, s.y]]
+
+drawCenters = (context, triangulation) ->
+  Seq.each triangulation, (t) ->
+    [s, r] = circleSpecs triangulation, t.vertices()...
+    context.beginPath()
+    context.arc s.x, s.y, 5, 0, Math.PI * 2, true
+    context.fillStyle = 'rgb(255, 255, 0)'
+    context.fill()
+    context.strokeStyle = 'rgb(200, 255, 200)'
+    context.stroke()
+
+drawCircles = (context, triangulation) ->
+  Seq.each triangulation, (t) ->
+    [s, r] = circleSpecs triangulation, t.vertices()...
+    context.beginPath()
+    context.arc s.x, s.y, r, 0, Math.PI * 2, true
+    context.strokeStyle = 'rgb(200, 255, 200)'
+    context.stroke()
+
+drawEdges = (context, triangulation) ->
+  Seq.each triangulation, (triangle) ->
+    [a, b, c] = triangle.vertices()
+    seq([a, b], [b, c], [c, a]).each ([u, v]) ->
+      if u < v or triangulation.third(v, u) < 0
+        p = triangulation.position u
+        q = triangulation.position v
+        context.beginPath()
+        context.moveTo p.x, p.y
+        context.lineTo q.x, q.y
+        context.strokeStyle = 'black'
+        context.stroke()
+
+drawSites = (context, coll) ->
+  coll.each ([id, [x, y]]) ->
+    context.beginPath()
+    context.arc x, y, 5, 0, Math.PI * 2, true
+    context.fillStyle = if id == active then 'rgb(200,0,0)' else 'rgb(0,0,200)'
+    context.fill()
+    context.strokeStyle = 'black'
+    context.stroke()
 
 draw = ->
   ctx.clearRect 0, 0, canvas.width, canvas.height
-
-  Seq.each delaunay, (tri) ->
-    [a, b, c] = tri.vertices()
-    seq([a, b], [b, c], [c, a]).each ([u, v]) ->
-      if u < v or delaunay.third(v, u) < 0
-        p = delaunay.position u
-        q = delaunay.position v
-        ctx.beginPath()
-        ctx.moveTo p.x, p.y
-        ctx.lineTo q.x, q.y
-        ctx.stroke()
-
-  sites.each ([id, [x, y]]) ->
-    ctx.beginPath()
-    ctx.arc x, y, 5, 0, Math.PI * 2, true
-    ctx.strokeStyle = 'black'
-    ctx.stroke()
-    ctx.fillStyle = if id == active then 'rgb(200,0,0)' else 'rgb(0,0,200)'
-    ctx.fill()
+  drawCenters ctx, delaunay
+  drawCircles ctx, delaunay
+  drawEdges   ctx, delaunay
+  drawSites   ctx, sites
 
 
 position = (e) -> [e.pageX, e.pageY]

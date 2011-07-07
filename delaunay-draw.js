@@ -1,10 +1,11 @@
 (function() {
-  var $, Point, Seq, active, canvas, ctx, debounce, delaunay, distFromSite, down, draw, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle, updateMouse;
+  var $, Point, Seq, active, canvas, center, circleSpecs, ctx, debounce, delaunay, distance, down, draw, drawCenters, drawCircles, drawEdges, drawSites, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle, updateMouse;
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   $ = jQuery;
   Seq = pazy.Sequence;
   sites = new pazy.IntMap();
   delaunay = pazy.delaunayTriangulation();
+  center = pazy.circumCircleCenter;
   Point = pazy.Point2d;
   canvas = null;
   ctx = null;
@@ -27,7 +28,7 @@
   square = function(x) {
     return x * x;
   };
-  distFromSite = function(_arg, _arg2) {
+  distance = function(_arg, _arg2) {
     var x1, x2, y1, y2;
     x1 = _arg[0], y1 = _arg[1];
     x2 = _arg2[0], y2 = _arg2[1];
@@ -38,7 +39,7 @@
     return (_ref = Seq.find(sites, function(_arg) {
       var id, p;
       id = _arg[0], p = _arg[1];
-      return distFromSite([x, y], p) < 10;
+      return distance([x, y], p) < 10;
     })) != null ? _ref[0] : void 0;
   };
   newSite = function(x, y) {
@@ -54,34 +55,73 @@
   siteAt = function(x, y) {
     return findSite(x, y) || newSite(x, y);
   };
-  draw = function() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    Seq.each(delaunay, function(tri) {
+  circleSpecs = function(triangulation, a, b, c) {
+    var s, u, v, w;
+    u = triangulation.position(a);
+    v = triangulation.position(b);
+    w = triangulation.position(c);
+    s = center(u, v, w);
+    return [s, distance([u.x, u.y], [s.x, s.y])];
+  };
+  drawCenters = function(context, triangulation) {
+    return Seq.each(triangulation, function(t) {
+      var r, s, _ref;
+      _ref = circleSpecs.apply(null, [triangulation].concat(__slice.call(t.vertices()))), s = _ref[0], r = _ref[1];
+      context.beginPath();
+      context.arc(s.x, s.y, 5, 0, Math.PI * 2, true);
+      context.fillStyle = 'rgb(255, 255, 0)';
+      context.fill();
+      context.strokeStyle = 'rgb(200, 255, 200)';
+      return context.stroke();
+    });
+  };
+  drawCircles = function(context, triangulation) {
+    return Seq.each(triangulation, function(t) {
+      var r, s, _ref;
+      _ref = circleSpecs.apply(null, [triangulation].concat(__slice.call(t.vertices()))), s = _ref[0], r = _ref[1];
+      context.beginPath();
+      context.arc(s.x, s.y, r, 0, Math.PI * 2, true);
+      context.strokeStyle = 'rgb(200, 255, 200)';
+      return context.stroke();
+    });
+  };
+  drawEdges = function(context, triangulation) {
+    return Seq.each(triangulation, function(triangle) {
       var a, b, c, _ref;
-      _ref = tri.vertices(), a = _ref[0], b = _ref[1], c = _ref[2];
+      _ref = triangle.vertices(), a = _ref[0], b = _ref[1], c = _ref[2];
       return seq([a, b], [b, c], [c, a]).each(function(_arg) {
         var p, q, u, v;
         u = _arg[0], v = _arg[1];
-        if (u < v || delaunay.third(v, u) < 0) {
-          p = delaunay.position(u);
-          q = delaunay.position(v);
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(q.x, q.y);
-          return ctx.stroke();
+        if (u < v || triangulation.third(v, u) < 0) {
+          p = triangulation.position(u);
+          q = triangulation.position(v);
+          context.beginPath();
+          context.moveTo(p.x, p.y);
+          context.lineTo(q.x, q.y);
+          context.strokeStyle = 'black';
+          return context.stroke();
         }
       });
     });
-    return sites.each(function(_arg) {
+  };
+  drawSites = function(context, coll) {
+    return coll.each(function(_arg) {
       var id, x, y, _ref;
       id = _arg[0], _ref = _arg[1], x = _ref[0], y = _ref[1];
-      ctx.beginPath();
-      ctx.arc(x, y, 5, 0, Math.PI * 2, true);
-      ctx.strokeStyle = 'black';
-      ctx.stroke();
-      ctx.fillStyle = id === active ? 'rgb(200,0,0)' : 'rgb(0,0,200)';
-      return ctx.fill();
+      context.beginPath();
+      context.arc(x, y, 5, 0, Math.PI * 2, true);
+      context.fillStyle = id === active ? 'rgb(200,0,0)' : 'rgb(0,0,200)';
+      context.fill();
+      context.strokeStyle = 'black';
+      return context.stroke();
     });
+  };
+  draw = function() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawCenters(ctx, delaunay);
+    drawCircles(ctx, delaunay);
+    drawEdges(ctx, delaunay);
+    return drawSites(ctx, sites);
   };
   position = function(e) {
     return [e.pageX, e.pageY];
