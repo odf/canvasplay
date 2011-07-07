@@ -1,5 +1,5 @@
 (function() {
-  var $, Point, Seq, active, canvas, center, circleSpecs, ctx, debounce, delaunay, distance, down, draw, drawCenters, drawCircles, drawEdges, drawSites, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle, updateMouse;
+  var $, Point, Seq, active, canvas, center, circleSpecs, ctx, debounce, delaunay, distance, down, draw, drawCenters, drawCircles, drawEdges, drawSites, drawVoronoi, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle, updateMouse;
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   $ = jQuery;
   Seq = pazy.Sequence;
@@ -63,6 +63,29 @@
     s = center(u, v, w);
     return [s, distance([u.x, u.y], [s.x, s.y])];
   };
+  drawVoronoi = function(context, triangulation) {
+    return Seq.each(triangulation, function(triangle) {
+      var a, b, c, _ref;
+      _ref = triangle.vertices(), a = _ref[0], b = _ref[1], c = _ref[2];
+      return seq([a, b], [b, c], [c, a]).each(function(_arg) {
+        var r1, r2, s1, s2, t, u, v, w, _ref2, _ref3;
+        u = _arg[0], v = _arg[1];
+        if (u < v || triangulation.third(v, u) < 0) {
+          t = triangulation.third(u, v);
+          w = triangulation.third(v, u);
+          if (t >= 0 && w >= 0) {
+            _ref2 = circleSpecs(triangulation, t, u, v), s1 = _ref2[0], r1 = _ref2[1];
+            _ref3 = circleSpecs(triangulation, w, v, u), s2 = _ref3[0], r2 = _ref3[1];
+            context.beginPath();
+            context.moveTo(s1.x, s1.y);
+            context.lineTo(s2.x, s2.y);
+            context.strokeStyle = 'rgb(228, 200, 228)';
+            return context.stroke();
+          }
+        }
+      });
+    });
+  };
   drawCenters = function(context, triangulation) {
     return Seq.each(triangulation, function(t) {
       var r, s, _ref;
@@ -118,6 +141,7 @@
   };
   draw = function() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawVoronoi(ctx, delaunay);
     drawCenters(ctx, delaunay);
     drawCircles(ctx, delaunay);
     drawEdges(ctx, delaunay);

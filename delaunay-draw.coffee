@@ -44,6 +44,22 @@ circleSpecs = (triangulation, a, b, c) ->
   s = center u, v, w
   [s, distance [u.x, u.y], [s.x, s.y]]
 
+drawVoronoi = (context, triangulation) ->
+  Seq.each triangulation, (triangle) ->
+    [a, b, c] = triangle.vertices()
+    seq([a, b], [b, c], [c, a]).each ([u, v]) ->
+      if u < v or triangulation.third(v, u) < 0
+        t = triangulation.third u, v
+        w = triangulation.third v, u
+        if t >= 0 and w >= 0
+          [s1, r1] = circleSpecs triangulation, t, u, v
+          [s2, r2] = circleSpecs triangulation, w, v, u
+          context.beginPath()
+          context.moveTo s1.x, s1.y
+          context.lineTo s2.x, s2.y
+          context.strokeStyle = 'rgb(228, 200, 228)'
+          context.stroke()
+
 drawCenters = (context, triangulation) ->
   Seq.each triangulation, (t) ->
     [s, r] = circleSpecs triangulation, t.vertices()...
@@ -86,6 +102,7 @@ drawSites = (context, coll) ->
 
 draw = ->
   ctx.clearRect 0, 0, canvas.width, canvas.height
+  drawVoronoi ctx, delaunay
   drawCenters ctx, delaunay
   drawCircles ctx, delaunay
   drawEdges   ctx, delaunay
