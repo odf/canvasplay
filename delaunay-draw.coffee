@@ -13,7 +13,6 @@ active     = null
 
 moved      = false
 down       = false
-dirty      = false
 
 
 seq = (args...) -> new Seq args
@@ -40,9 +39,6 @@ siteAt = (x, y) -> findSite(x, y) or newSite(x, y)
 
 
 draw = ->
-  return unless dirty
-
-  dirty = false
   ctx.clearRect 0, 0, canvas.width, canvas.height
 
   Seq.each delaunay, (tri) ->
@@ -66,30 +62,44 @@ draw = ->
 
 position = (e) -> [e.pageX, e.pageY]
 
+# The functions `limit`, `throttle` and `debounce` were taken from
+# Jeremy Ashkenas' Underscore.js
+limit = (func, wait, debounce) ->
+  timeout = null
+  (args...) ->
+    throttler = =>
+      timeout = null
+      func.apply this, args
+
+    clearTimeout timeout if debounce
+    timeout = setTimeout throttler, wait if debounce or not timeout
+
+throttle = (wait, func) -> limit func, wait, false
+debounce = (wait, func) -> limit func, wait, true
+
+
 handlers =
   canvas:
-    mousemove: (e) ->
+    mousemove: throttle(50, (e) ->
       [x, y] = position e
-      moved = dirty = true
       active = findSite(x, y)
-
-      if down and source
-        moveSite source, x, y
+      moveSite source, x, y if down and source
+      moved = true
+      draw()
+    )
 
     mousedown: (e) ->
       [x, y] = position e
-      down = dirty = true
-
       source = siteAt x, y
+      down = true
       moved = false
+      draw()
 
     mouseup: (e) ->
-      down = false
       [x, y] = position e
-      dirty = true
-
       source = null
-      moved = false
+      down = moved = false
+      draw()
 
 
 $(document).ready ->
@@ -97,6 +107,6 @@ $(document).ready ->
     if this.getContext
       canvas = this
       ctx = this.getContext '2d'
-      setInterval draw, 100
+      draw()
 
       $(this).bind handlers.canvas

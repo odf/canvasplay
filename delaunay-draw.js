@@ -1,6 +1,6 @@
 (function() {
-  var $, Point, Seq, active, canvas, ctx, delaunay, dirty, distFromSite, down, draw, findSite, handlers, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square;
-  var __slice = Array.prototype.slice;
+  var $, Point, Seq, active, canvas, ctx, debounce, delaunay, distFromSite, down, draw, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle;
+  var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   $ = jQuery;
   Seq = pazy.Sequence;
   sites = new pazy.IntMap();
@@ -12,7 +12,6 @@
   active = null;
   moved = false;
   down = false;
-  dirty = false;
   seq = function() {
     var args;
     args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
@@ -56,10 +55,6 @@
     return findSite(x, y) || newSite(x, y);
   };
   draw = function() {
-    if (!dirty) {
-      return;
-    }
-    dirty = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     Seq.each(delaunay, function(tri) {
       var a, b, c, _ref;
@@ -89,31 +84,56 @@
   position = function(e) {
     return [e.pageX, e.pageY];
   };
+  limit = function(func, wait, debounce) {
+    var timeout;
+    timeout = null;
+    return function() {
+      var args, throttler;
+      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      throttler = __bind(function() {
+        timeout = null;
+        return func.apply(this, args);
+      }, this);
+      if (debounce) {
+        clearTimeout(timeout);
+      }
+      if (debounce || !timeout) {
+        return timeout = setTimeout(throttler, wait);
+      }
+    };
+  };
+  throttle = function(wait, func) {
+    return limit(func, wait, false);
+  };
+  debounce = function(wait, func) {
+    return limit(func, wait, true);
+  };
   handlers = {
     canvas: {
-      mousemove: function(e) {
+      mousemove: throttle(50, function(e) {
         var x, y, _ref;
         _ref = position(e), x = _ref[0], y = _ref[1];
-        moved = dirty = true;
         active = findSite(x, y);
         if (down && source) {
-          return moveSite(source, x, y);
+          moveSite(source, x, y);
         }
-      },
+        moved = true;
+        return draw();
+      }),
       mousedown: function(e) {
         var x, y, _ref;
         _ref = position(e), x = _ref[0], y = _ref[1];
-        down = dirty = true;
         source = siteAt(x, y);
-        return moved = false;
+        down = true;
+        moved = false;
+        return draw();
       },
       mouseup: function(e) {
         var x, y, _ref;
-        down = false;
         _ref = position(e), x = _ref[0], y = _ref[1];
-        dirty = true;
         source = null;
-        return moved = false;
+        down = moved = false;
+        return draw();
       }
     }
   };
@@ -122,7 +142,7 @@
       if (this.getContext) {
         canvas = this;
         ctx = this.getContext('2d');
-        setInterval(draw, 100);
+        draw();
         return $(this).bind(handlers.canvas);
       }
     });
