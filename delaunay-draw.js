@@ -1,5 +1,5 @@
 (function() {
-  var $, Point, Seq, active, canvas, ctx, debounce, delaunay, distFromSite, down, draw, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle;
+  var $, Point, Seq, active, canvas, ctx, debounce, delaunay, distFromSite, down, draw, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle, updateMouse;
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   $ = jQuery;
   Seq = pazy.Sequence;
@@ -62,12 +62,14 @@
       return seq([a, b], [b, c], [c, a]).each(function(_arg) {
         var p, q, u, v;
         u = _arg[0], v = _arg[1];
-        p = delaunay.position(u);
-        q = delaunay.position(v);
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y);
-        ctx.lineTo(q.x, q.y);
-        return ctx.stroke();
+        if (u < v || delaunay.third(v, u) < 0) {
+          p = delaunay.position(u);
+          q = delaunay.position(v);
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          return ctx.stroke();
+        }
       });
     });
     return sites.each(function(_arg) {
@@ -108,29 +110,32 @@
   debounce = function(wait, func) {
     return limit(func, wait, true);
   };
+  updateMouse = function(e) {
+    var x, y, _ref;
+    _ref = position(e), x = _ref[0], y = _ref[1];
+    active = findSite(x, y);
+    if (down && source) {
+      moveSite(source, x, y);
+    }
+    return [x, y];
+  };
   handlers = {
     canvas: {
       mousemove: throttle(50, function(e) {
-        var x, y, _ref;
-        _ref = position(e), x = _ref[0], y = _ref[1];
-        active = findSite(x, y);
-        if (down && source) {
-          moveSite(source, x, y);
-        }
+        updateMouse(e);
         moved = true;
         return draw();
       }),
       mousedown: function(e) {
         var x, y, _ref;
-        _ref = position(e), x = _ref[0], y = _ref[1];
+        _ref = updateMouse(e), x = _ref[0], y = _ref[1];
         source = siteAt(x, y);
         down = true;
         moved = false;
         return draw();
       },
       mouseup: function(e) {
-        var x, y, _ref;
-        _ref = position(e), x = _ref[0], y = _ref[1];
+        updateMouse(e);
         source = null;
         down = moved = false;
         return draw();

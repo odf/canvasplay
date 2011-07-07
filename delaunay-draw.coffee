@@ -44,12 +44,13 @@ draw = ->
   Seq.each delaunay, (tri) ->
     [a, b, c] = tri.vertices()
     seq([a, b], [b, c], [c, a]).each ([u, v]) ->
-      p = delaunay.position u
-      q = delaunay.position v
-      ctx.beginPath()
-      ctx.moveTo p.x, p.y
-      ctx.lineTo q.x, q.y
-      ctx.stroke()
+      if u < v or delaunay.third(v, u) < 0
+        p = delaunay.position u
+        q = delaunay.position v
+        ctx.beginPath()
+        ctx.moveTo p.x, p.y
+        ctx.lineTo q.x, q.y
+        ctx.stroke()
 
   sites.each ([id, [x, y]]) ->
     ctx.beginPath()
@@ -77,26 +78,29 @@ limit = (func, wait, debounce) ->
 throttle = (wait, func) -> limit func, wait, false
 debounce = (wait, func) -> limit func, wait, true
 
+updateMouse = (e) ->
+  [x, y] = position e
+  active = findSite(x, y)
+  moveSite source, x, y if down and source
+  [x, y]
 
 handlers =
   canvas:
     mousemove: throttle(50, (e) ->
-      [x, y] = position e
-      active = findSite(x, y)
-      moveSite source, x, y if down and source
+      updateMouse e
       moved = true
       draw()
     )
 
     mousedown: (e) ->
-      [x, y] = position e
+      [x, y] = updateMouse e
       source = siteAt x, y
       down = true
       moved = false
       draw()
 
     mouseup: (e) ->
-      [x, y] = position e
+      updateMouse e
       source = null
       down = moved = false
       draw()
