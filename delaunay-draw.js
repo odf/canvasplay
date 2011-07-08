@@ -196,6 +196,9 @@
     var x, y, _ref;
     _ref = position(e), x = _ref[0], y = _ref[1];
     active = findSite(x, y);
+    if (down && source) {
+      moveSite(source, x, y);
+    }
     return [x, y];
   };
   handlers = {
@@ -215,6 +218,13 @@
       },
       mouseup: function(e) {
         updateMouse(e);
+        if (moved) {
+          delaunay = Seq.reduce(sites, new pazy.delaunayTriangulation(), function(t, _arg) {
+            var id, x, y, _ref;
+            id = _arg[0], _ref = _arg[1], x = _ref[0], y = _ref[1];
+            return t.plus(new Point(x, y));
+          });
+        }
         source = null;
         down = moved = false;
         return draw();

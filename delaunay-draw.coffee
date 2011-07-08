@@ -143,7 +143,7 @@ debounce = (wait, func) -> limit func, wait, true
 updateMouse = (e) ->
   [x, y] = position e
   active = findSite(x, y)
-  #moveSite source, x, y if down and source
+  moveSite source, x, y if down and source
   [x, y]
 
 handlers =
@@ -163,6 +163,9 @@ handlers =
 
     mouseup: (e) ->
       updateMouse e
+      if moved
+        delaunay = Seq.reduce sites, new pazy.delaunayTriangulation(),
+          (t, [id, [x, y]]) -> t.plus new Point x, y
       source = null
       down = moved = false
       draw()
