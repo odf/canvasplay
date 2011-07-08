@@ -44,6 +44,13 @@ circleSpecs = (triangulation, a, b, c) ->
   s = center u, v, w
   [s, distance [u.x, u.y], [s.x, s.y]]
 
+farPoint = (triangulation, a, b, s) ->
+  u = triangulation.position a
+  v = triangulation.position b
+  d = [v.y - u.y, u.x - v.x]
+  f = 2000.0 / distance d, [0, 0]
+  s.plus new Point(d...).times f
+
 drawVoronoi = (context, triangulation) ->
   Seq.each triangulation, (triangle) ->
     [a, b, c] = triangle.vertices()
@@ -54,20 +61,27 @@ drawVoronoi = (context, triangulation) ->
         if t >= 0 and w >= 0
           [s1, r1] = circleSpecs triangulation, t, u, v
           [s2, r2] = circleSpecs triangulation, w, v, u
-          context.beginPath()
-          context.moveTo s1.x, s1.y
-          context.lineTo s2.x, s2.y
-          context.strokeStyle = 'rgb(228, 200, 228)'
-          context.stroke()
+        else if t < 0
+          [s1, r1] = circleSpecs triangulation, w, v, u
+          s2 = farPoint triangulation, v, u, s1
+        else
+          [s1, r1] = circleSpecs triangulation, t, u, v
+          s2 = farPoint triangulation, u, v, s1
+
+        context.beginPath()
+        context.moveTo s1.x, s1.y
+        context.lineTo s2.x, s2.y
+        context.strokeStyle = 'rgb(200, 128, 200)'
+        context.stroke()
 
 drawCenters = (context, triangulation) ->
   Seq.each triangulation, (t) ->
     [s, r] = circleSpecs triangulation, t.vertices()...
     context.beginPath()
-    context.arc s.x, s.y, 5, 0, Math.PI * 2, true
-    context.fillStyle = 'rgb(255, 255, 0)'
+    context.arc s.x, s.y, 3, 0, Math.PI * 2, true
+    context.fillStyle = 'rgb(200, 255, 0)'
     context.fill()
-    context.strokeStyle = 'rgb(200, 255, 200)'
+    context.strokeStyle = 'gray'
     context.stroke()
 
 drawCircles = (context, triangulation) ->

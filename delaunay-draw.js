@@ -1,5 +1,5 @@
 (function() {
-  var $, Point, Seq, active, canvas, center, circleSpecs, ctx, debounce, delaunay, distance, down, draw, drawCenters, drawCircles, drawEdges, drawSites, drawVoronoi, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle, updateMouse;
+  var $, Point, Seq, active, canvas, center, circleSpecs, ctx, debounce, delaunay, distance, down, draw, drawCenters, drawCircles, drawEdges, drawSites, drawVoronoi, farPoint, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle, updateMouse;
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   $ = jQuery;
   Seq = pazy.Sequence;
@@ -63,12 +63,24 @@
     s = center(u, v, w);
     return [s, distance([u.x, u.y], [s.x, s.y])];
   };
+  farPoint = function(triangulation, a, b, s) {
+    var d, f, u, v;
+    u = triangulation.position(a);
+    v = triangulation.position(b);
+    d = [v.y - u.y, u.x - v.x];
+    f = 2000.0 / distance(d, [0, 0]);
+    return s.plus((function(func, args, ctor) {
+      ctor.prototype = func.prototype;
+      var child = new ctor, result = func.apply(child, args);
+      return typeof result === "object" ? result : child;
+    })(Point, d, function() {}).times(f));
+  };
   drawVoronoi = function(context, triangulation) {
     return Seq.each(triangulation, function(triangle) {
       var a, b, c, _ref;
       _ref = triangle.vertices(), a = _ref[0], b = _ref[1], c = _ref[2];
       return seq([a, b], [b, c], [c, a]).each(function(_arg) {
-        var r1, r2, s1, s2, t, u, v, w, _ref2, _ref3;
+        var r1, r2, s1, s2, t, u, v, w, _ref2, _ref3, _ref4, _ref5;
         u = _arg[0], v = _arg[1];
         if (u < v || triangulation.third(v, u) < 0) {
           t = triangulation.third(u, v);
@@ -76,12 +88,18 @@
           if (t >= 0 && w >= 0) {
             _ref2 = circleSpecs(triangulation, t, u, v), s1 = _ref2[0], r1 = _ref2[1];
             _ref3 = circleSpecs(triangulation, w, v, u), s2 = _ref3[0], r2 = _ref3[1];
-            context.beginPath();
-            context.moveTo(s1.x, s1.y);
-            context.lineTo(s2.x, s2.y);
-            context.strokeStyle = 'rgb(228, 200, 228)';
-            return context.stroke();
+          } else if (t < 0) {
+            _ref4 = circleSpecs(triangulation, w, v, u), s1 = _ref4[0], r1 = _ref4[1];
+            s2 = farPoint(triangulation, v, u, s1);
+          } else {
+            _ref5 = circleSpecs(triangulation, t, u, v), s1 = _ref5[0], r1 = _ref5[1];
+            s2 = farPoint(triangulation, u, v, s1);
           }
+          context.beginPath();
+          context.moveTo(s1.x, s1.y);
+          context.lineTo(s2.x, s2.y);
+          context.strokeStyle = 'rgb(200, 128, 200)';
+          return context.stroke();
         }
       });
     });
@@ -91,10 +109,10 @@
       var r, s, _ref;
       _ref = circleSpecs.apply(null, [triangulation].concat(__slice.call(t.vertices()))), s = _ref[0], r = _ref[1];
       context.beginPath();
-      context.arc(s.x, s.y, 5, 0, Math.PI * 2, true);
-      context.fillStyle = 'rgb(255, 255, 0)';
+      context.arc(s.x, s.y, 3, 0, Math.PI * 2, true);
+      context.fillStyle = 'rgb(200, 255, 0)';
       context.fill();
-      context.strokeStyle = 'rgb(200, 255, 200)';
+      context.strokeStyle = 'gray';
       return context.stroke();
     });
   };
