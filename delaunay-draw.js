@@ -199,11 +199,12 @@
     if (down && source) {
       moveSite(source, x, y);
     }
+    $('#position').text("" + x + ", " + y);
     return [x, y];
   };
   handlers = {
     canvas: {
-      mousemove: throttle(50, function(e) {
+      mousemove: throttle(20, function(e) {
         updateMouse(e);
         moved = true;
         return draw();
@@ -232,12 +233,33 @@
     }
   };
   $(document).ready(function() {
+    var initial;
+    initial = [];
     return $('#canvas').each(function() {
+      var i;
       if (this.getContext) {
         canvas = this;
         ctx = this.getContext('2d');
-        draw();
-        return $(this).bind(handlers.canvas);
+        i = 0;
+        if (initial.length > 0) {
+          return $(this).mousedown(__bind(function() {
+            if (i >= initial.length) {
+              sites = new pazy.IntMap();
+              delaunay = new pazy.delaunayTriangulation();
+              draw();
+              $(this).unbind('mousedown');
+              return $(this).bind(handlers.canvas);
+            } else {
+              siteAt.apply(null, initial[i].map(function(x) {
+                return x * 8;
+              }));
+              i += 1;
+              return draw();
+            }
+          }, this));
+        } else {
+          return $(this).bind(handlers.canvas);
+        }
       }
     });
   });

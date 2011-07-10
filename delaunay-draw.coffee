@@ -144,11 +144,12 @@ updateMouse = (e) ->
   [x, y] = position e
   active = findSite(x, y)
   moveSite source, x, y if down and source
+  $('#position').text "#{x}, #{y}"
   [x, y]
 
 handlers =
   canvas:
-    mousemove: throttle(50, (e) ->
+    mousemove: throttle(20, (e) ->
       updateMouse e
       moved = true
       draw()
@@ -172,10 +173,42 @@ handlers =
 
 
 $(document).ready ->
+  initial = [
+    # [70, 80]
+    # [ 6, 91]
+    # [91, 92]
+    # [33,  5]
+    # [67,  3]
+    # [32, 11]
+    # [ 5, 83]
+    # [65, 37]
+    # [33,  2]
+    # [ 5, 49]
+    # [66, 31]
+    # [62, 34]
+    # [93, 98]
+    # [73, 10]
+    # [28, 66]
+    # [39, 54]
+    # [97, 87]
+    # [19,  5]
+  ]
   $('#canvas').each ->
     if this.getContext
       canvas = this
       ctx = this.getContext '2d'
-      draw()
-
-      $(this).bind handlers.canvas
+      i = 0
+      if initial.length > 0
+        $(this).mousedown =>
+          if i >= initial.length
+            sites = new pazy.IntMap()
+            delaunay = new pazy.delaunayTriangulation()
+            draw()
+            $(this).unbind 'mousedown'
+            $(this).bind handlers.canvas
+          else
+            siteAt initial[i].map((x) -> x * 8)...
+            i += 1
+            draw()
+      else
+        $(this).bind handlers.canvas
