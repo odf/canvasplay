@@ -1,13 +1,13 @@
 (function() {
-  var HashMap, HashSet, Point2d, Point3d, Sequence, Triangle, circumCircleCenter, delaunayTriangulation, inclusionInCircumCircle, lift, liftedNormal, recur, resolve, seq, test, trace, tri, triangulation, unlift, _ref, _ref2, _ref3, _ref4;
+  var HashMap, HashSet, IntMap, Point2d, Point3d, Sequence, Triangle, args, circumCircleCenter, delaunayTriangulation, inclusionInCircumCircle, lift, liftedNormal, recur, resolve, seq, test, trace, tri, triangulation, unlift, _ref, _ref2, _ref3, _ref4, _ref5;
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   if (typeof require !== 'undefined') {
     require.paths.unshift('#{__dirname}/../lib');
     _ref = require('functional'), recur = _ref.recur, resolve = _ref.resolve;
     Sequence = require('sequence').Sequence;
-    _ref2 = require('indexed'), HashSet = _ref2.HashSet, HashMap = _ref2.HashMap;
+    _ref2 = require('indexed'), IntMap = _ref2.IntMap, HashSet = _ref2.HashSet, HashMap = _ref2.HashMap;
   } else {
-    _ref3 = this.pazy, recur = _ref3.recur, resolve = _ref3.resolve, Sequence = _ref3.Sequence, HashSet = _ref3.HashSet, HashMap = _ref3.HashMap;
+    _ref3 = this.pazy, recur = _ref3.recur, resolve = _ref3.resolve, Sequence = _ref3.Sequence, IntMap = _ref3.IntMap, HashSet = _ref3.HashSet, HashMap = _ref3.HashMap;
   }
   trace = function(s) {};
   seq = function() {
@@ -31,6 +31,9 @@
     };
     Point2d.prototype.toString = function() {
       return "(" + this.x + ", " + this.y + ")";
+    };
+    Point2d.prototype.equals = function(p) {
+      return this.x === p.x && this.y === p.y;
     };
     return Point2d;
   })();
@@ -167,9 +170,10 @@
         var args;
         args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
         this.triangulation__ = args[0] || triangulation(outer.vertices());
-        this.position__ = args[1] || [];
-        this.sites__ = args[2] || new HashSet();
-        this.children__ = args[3] || new HashMap();
+        this.position__ = args[1] || new IntMap();
+        this.nextIndex__ = args[2] || 0;
+        this.sites__ = args[3] || new HashSet();
+        this.children__ = args[4] || new HashMap();
       }
       Triangulation.prototype.toSeq = function() {
         return Sequence.select(this.triangulation__, function(t) {
@@ -185,7 +189,7 @@
         return this.triangulation__.find(a, b, c);
       };
       Triangulation.prototype.position = function(n) {
-        return this.position__[n];
+        return this.position__.get(n);
       };
       Triangulation.prototype.sideOf = function(a, b, p) {
         var r, rp, rs;
@@ -261,8 +265,8 @@
         var a, b, c, n, _ref4;
         trace("subdivide [" + (T.triangulation__.toSeq()) + "], " + t + ", " + p);
         _ref4 = t.vertices(), a = _ref4[0], b = _ref4[1], c = _ref4[2];
-        n = T.position__.length;
-        return new T.constructor(T.triangulation__.minus(a, b, c).plus(a, b, n).plus(b, c, n).plus(c, a, n), T.position__.concat([p]), T.sites__.plus(p), T.children__.plus([T.find(a, b, c), seq(tri(a, b, n), tri(b, c, n), tri(c, a, n))]));
+        n = T.nextIndex__;
+        return new T.constructor(T.triangulation__.minus(a, b, c).plus(a, b, n).plus(b, c, n).plus(c, a, n), T.position__.plus([n, p]), n + 1, T.sites__.plus(p), T.children__.plus([T.find(a, b, c), seq(tri(a, b, n), tri(b, c, n), tri(c, a, n))]));
       };
       flip = function(T, a, b) {
         var c, children, d;
@@ -270,7 +274,7 @@
         c = T.third(a, b);
         d = T.third(b, a);
         children = seq(tri(b, c, d), tri(a, d, c));
-        return new T.constructor(T.triangulation__.minus(a, b, c).minus(b, a, d).plus(b, c, d).plus(a, d, c), T.position__, T.sites__, T.children__.plus([T.find(a, b, c), children], [T.find(b, a, d), children]));
+        return new T.constructor(T.triangulation__.minus(a, b, c).minus(b, a, d).plus(b, c, d).plus(a, d, c), T.position__, T.nextIndex__, T.sites__, T.children__.plus([T.find(a, b, c), children], [T.find(b, a, d), children]));
       };
       doFlips = function(T, stack) {
         var a, b, c, _ref4;
@@ -334,30 +338,55 @@
   exports.inclusionInCircumCircle = inclusionInCircumCircle;
   exports.triangulation = triangulation;
   exports.delaunayTriangulation = delaunayTriangulation;
-  test = function() {
-    var rnd, t;
-    rnd = function() {
-      return Math.floor(Math.random() * 100);
-    };
-    t = Sequence.range(1, 1000).reduce(delaunayTriangulation(), function(s, i) {
-      return s.plus(new Point2d(rnd(), rnd()));
-    });
-    return Sequence.each(t, function(triangle) {
-      var a, b, c, _ref5;
-      _ref5 = triangle.vertices(), a = _ref5[0], b = _ref5[1], c = _ref5[2];
-      return Sequence.each([[a, b], [b, c], [c, a]], function(_arg) {
-        var r, s, u, v, w, x;
-        r = _arg[0], s = _arg[1];
-        if (r <= s) {
-          u = t.position(r);
-          v = t.position(s);
-          w = t.position(t.third(r, s)) || t.third(r, s);
-          x = t.position(t.third(s, r)) || t.third(s, r);
-          if (t.mustFlip(r, s)) {
-            return console.log("Delaunay condition fails for " + u + "," + v + "," + w + "," + x + ")", function() {});
-          }
+  test = function(n, m) {
+    if (n == null) {
+      n = 100;
+    }
+    if (m == null) {
+      m = 10;
+    }
+    return Sequence.range(1, n).each(function(i) {
+      var rnd, t;
+      console.log("Run " + i);
+      rnd = function() {
+        return Math.floor(Math.random() * 100);
+      };
+      t = Sequence.range(1, m).reduce(delaunayTriangulation(), function(s, j) {
+        var p;
+        p = new Point2d(rnd(), rnd());
+        try {
+          return s.plus(p);
+        } catch (ex) {
+          console.log(Sequence.map(s.position__, function(_arg) {
+            var k, p;
+            k = _arg[0], p = _arg[1];
+            return p;
+          }).join(', '));
+          console.log(p);
+          throw ex;
         }
+      });
+      return Sequence.each(t, function(triangle) {
+        var a, b, c, _ref5;
+        _ref5 = triangle.vertices(), a = _ref5[0], b = _ref5[1], c = _ref5[2];
+        return Sequence.each([[a, b], [b, c], [c, a]], function(_arg) {
+          var r, s, u, v, w, x;
+          r = _arg[0], s = _arg[1];
+          if (r <= s) {
+            u = t.position(r);
+            v = t.position(s);
+            w = t.position(t.third(r, s)) || t.third(r, s);
+            x = t.position(t.third(s, r)) || t.third(s, r);
+            if (t.mustFlip(r, s)) {
+              throw "  Delaunay condition fails for " + u + "," + v + "," + w + "," + x + ")";
+            }
+          }
+        });
       });
     });
   };
+  if ((typeof module !== "undefined" && module !== null) && !module.parent) {
+    args = (_ref5 = Sequence.map(process.argv.slice(2), parseInt)) != null ? _ref5.into([]) : void 0;
+    test.apply(null, args);
+  }
 }).call(this);
