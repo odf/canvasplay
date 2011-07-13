@@ -1,11 +1,11 @@
 (function() {
-  var $, Point, active, canvas, center, circleSpecs, ctx, debounce, delaunay, distance, down, draw, drawCenters, drawCircles, drawEdges, drawSites, drawVoronoi, farPoint, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, siteAt, sites, source, square, throttle, updateMouse;
+  var $, Point, active, canvas, circleSpecs, ctx, debounce, delaunay, distance, down, draw, drawCenters, drawCircles, drawEdges, drawSites, drawVoronoi, farPoint, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle, updateMouse;
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   $ = jQuery;
-  sites = new pazy.IntMap();
+  sites = new IntMap();
   delaunay = pazy.delaunayTriangulation();
-  center = pazy.circumCircleCenter;
   Point = pazy.Point2d;
+  seq = pazy.seq;
   canvas = null;
   ctx = null;
   source = null;
@@ -40,7 +40,7 @@
     var id;
     id = nextId();
     sites = sites.plus([id, [x, y]]);
-    delaunay = delaunay.plus(new Point(x, y));
+    delaunay = delaunay.plus(x, y);
     return id;
   };
   moveSite = function(pid, x, y) {
@@ -54,7 +54,7 @@
     u = triangulation.position(a);
     v = triangulation.position(b);
     w = triangulation.position(c);
-    s = center(u, v, w);
+    s = pazy.circumCircleCenter(u, v, w);
     return [s, distance([u.x, u.y], [s.x, s.y])];
   };
   farPoint = function(triangulation, a, b, s) {
@@ -212,15 +212,13 @@
         return draw();
       },
       mouseup: function(e) {
-        var empty;
         updateMouse(e);
         if (moved) {
-          empty = new pazy.delaunayTriangulation();
-          delaunay = seq(sites).map(function(_arg) {
+          delaunay = seq.reduce(sites, pazy.delaunayTriangulation(), function(s, _arg) {
             var id, x, y, _ref;
             id = _arg[0], _ref = _arg[1], x = _ref[0], y = _ref[1];
-            return new Point(x, y);
-          }).into(empty);
+            return s.plus(x, y);
+          });
         }
         source = null;
         down = moved = false;

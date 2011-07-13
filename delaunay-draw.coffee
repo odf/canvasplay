@@ -1,9 +1,9 @@
 $ = jQuery
 
-sites    = new  pazy.IntMap()
+sites    = new IntMap()
 delaunay = pazy.delaunayTriangulation()
-center   = pazy.circumCircleCenter
 Point    = pazy.Point2d
+seq      = pazy.seq
 
 canvas   = null
 ctx      = null
@@ -26,7 +26,7 @@ findSite = (x, y) -> seq.find(sites, ([id, p]) -> distance([x, y], p) < 10)?[0]
 newSite = (x, y) ->
   id = nextId()
   sites = sites.plus [id, [x, y]]
-  delaunay = delaunay.plus new Point x, y
+  delaunay = delaunay.plus x, y
   id
 
 moveSite = (pid, x, y) -> sites = sites.plus [pid, [x, y]]
@@ -37,7 +37,7 @@ circleSpecs = (triangulation, a, b, c) ->
   u = triangulation.position a
   v = triangulation.position b
   w = triangulation.position c
-  s = center u, v, w
+  s = pazy.circumCircleCenter u, v, w
   [s, distance [u.x, u.y], [s.x, s.y]]
 
 farPoint = (triangulation, a, b, s) ->
@@ -161,8 +161,9 @@ handlers =
     mouseup: (e) ->
       updateMouse e
       if moved
-        empty = new pazy.delaunayTriangulation()
-        delaunay = seq(sites).map(([id, [x, y]]) -> new Point x, y).into empty
+        delaunay = seq.reduce sites, pazy.delaunayTriangulation(),
+          (s, [id, [x, y]]) -> s.plus x, y
+        #delaunay = seq(sites).map(([id, p]) -> p).into empty
       source = null
       down = moved = false
       draw()
