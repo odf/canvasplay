@@ -1,9 +1,9 @@
 $ = jQuery
 
+{ IntMap, delaunayTriangulation, circumCircleCenter, Point2d, seq } = pazy
+
 sites    = new IntMap()
-delaunay = pazy.delaunayTriangulation()
-Point    = pazy.Point2d
-seq      = pazy.seq
+delaunay = delaunayTriangulation()
 
 canvas   = null
 ctx      = null
@@ -37,7 +37,7 @@ circleSpecs = (triangulation, a, b, c) ->
   u = triangulation.position a
   v = triangulation.position b
   w = triangulation.position c
-  s = pazy.circumCircleCenter u, v, w
+  s = circumCircleCenter u, v, w
   [s, distance [u.x, u.y], [s.x, s.y]]
 
 farPoint = (triangulation, a, b, s) ->
@@ -45,7 +45,7 @@ farPoint = (triangulation, a, b, s) ->
   v = triangulation.position b
   d = [v.y - u.y, u.x - v.x]
   f = 2000.0 / distance d, [0, 0]
-  s.plus new Point(d...).times f
+  s.plus new Point2d(d...).times f
 
 drawVoronoi = (context, triangulation) ->
   seq.each triangulation, (triangle) ->
@@ -161,7 +161,7 @@ handlers =
     mouseup: (e) ->
       updateMouse e
       if moved
-        delaunay = seq.reduce sites, pazy.delaunayTriangulation(),
+        delaunay = seq.reduce sites, delaunayTriangulation(),
           (s, [id, [x, y]]) -> s.plus x, y
         #delaunay = seq(sites).map(([id, p]) -> p).into empty
       source = null
@@ -198,8 +198,8 @@ $(document).ready ->
       if initial.length > 0
         $(this).mousedown =>
           if i >= initial.length
-            sites = new pazy.IntMap()
-            delaunay = new pazy.delaunayTriangulation()
+            sites = new IntMap()
+            delaunay = delaunayTriangulation()
             draw()
             $(this).unbind 'mousedown'
             $(this).bind handlers.canvas

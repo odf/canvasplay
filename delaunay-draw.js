@@ -1,11 +1,10 @@
 (function() {
-  var $, Point, active, canvas, circleSpecs, ctx, debounce, delaunay, distance, down, draw, drawCenters, drawCircles, drawEdges, drawSites, drawVoronoi, farPoint, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle, updateMouse;
+  var $, IntMap, Point2d, active, canvas, circleSpecs, circumCircleCenter, ctx, debounce, delaunay, delaunayTriangulation, distance, down, draw, drawCenters, drawCircles, drawEdges, drawSites, drawVoronoi, farPoint, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle, updateMouse;
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   $ = jQuery;
+  IntMap = pazy.IntMap, delaunayTriangulation = pazy.delaunayTriangulation, circumCircleCenter = pazy.circumCircleCenter, Point2d = pazy.Point2d, seq = pazy.seq;
   sites = new IntMap();
-  delaunay = pazy.delaunayTriangulation();
-  Point = pazy.Point2d;
-  seq = pazy.seq;
+  delaunay = delaunayTriangulation();
   canvas = null;
   ctx = null;
   source = null;
@@ -54,7 +53,7 @@
     u = triangulation.position(a);
     v = triangulation.position(b);
     w = triangulation.position(c);
-    s = pazy.circumCircleCenter(u, v, w);
+    s = circumCircleCenter(u, v, w);
     return [s, distance([u.x, u.y], [s.x, s.y])];
   };
   farPoint = function(triangulation, a, b, s) {
@@ -67,7 +66,7 @@
       ctor.prototype = func.prototype;
       var child = new ctor, result = func.apply(child, args);
       return typeof result === "object" ? result : child;
-    })(Point, d, function() {}).times(f));
+    })(Point2d, d, function() {}).times(f));
   };
   drawVoronoi = function(context, triangulation) {
     return seq.each(triangulation, function(triangle) {
@@ -214,7 +213,7 @@
       mouseup: function(e) {
         updateMouse(e);
         if (moved) {
-          delaunay = seq.reduce(sites, pazy.delaunayTriangulation(), function(s, _arg) {
+          delaunay = seq.reduce(sites, delaunayTriangulation(), function(s, _arg) {
             var id, x, y, _ref;
             id = _arg[0], _ref = _arg[1], x = _ref[0], y = _ref[1];
             return s.plus(x, y);
@@ -238,8 +237,8 @@
         if (initial.length > 0) {
           return $(this).mousedown(__bind(function() {
             if (i >= initial.length) {
-              sites = new pazy.IntMap();
-              delaunay = new pazy.delaunayTriangulation();
+              sites = new IntMap();
+              delaunay = delaunayTriangulation();
               draw();
               $(this).unbind('mousedown');
               return $(this).bind(handlers.canvas);
