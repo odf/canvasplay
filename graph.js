@@ -1,5 +1,5 @@
 (function() {
-  var $, Seq, active, canvas, cleanupTemporary, connectTemporary, ctx, deleteEdge, deleteEdgeAtTemporary, deleteVertex, dirty, distFromEdge, distFromVertex, dot, down, draw, edges, findEdge, findVertex, handlers, minus, moveVertex, moved, nearestOnEdge, newEdge, newVertex, nextId, onEdge, plus, position, rubberLine, source, square, temporary, times, vertexAt, vertices;
+  var $, active, canvas, cleanupTemporary, connectTemporary, ctx, deleteEdge, deleteEdgeAtTemporary, deleteVertex, dirty, distFromEdge, distFromVertex, dot, down, draw, edges, findEdge, findVertex, handlers, minus, moveVertex, moved, nearestOnEdge, newEdge, newVertex, nextId, onEdge, plus, position, rubberLine, source, square, temporary, times, vertexAt, vertices;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
@@ -7,7 +7,6 @@
     return -1;
   };
   $ = jQuery;
-  Seq = pazy.Sequence;
   vertices = new pazy.IntMap();
   edges = new pazy.IntMap();
   canvas = null;
@@ -78,7 +77,7 @@
   };
   findVertex = function(x, y) {
     var _ref;
-    return (_ref = Seq.find(vertices, function(_arg) {
+    return (_ref = seq.find(vertices, function(_arg) {
       var id, p;
       id = _arg[0], p = _arg[1];
       return distFromVertex([x, y], p) < 10;
@@ -86,7 +85,7 @@
   };
   findEdge = function(x, y) {
     var _ref;
-    return (_ref = Seq.find(edges, function(_arg) {
+    return (_ref = seq.find(edges, function(_arg) {
       var e, id;
       id = _arg[0], e = _arg[1];
       return distFromEdge([x, y], e) < 10;
@@ -106,7 +105,7 @@
   };
   deleteVertex = function(pid) {
     var obsolete;
-    obsolete = Seq.select(edges, function(_arg) {
+    obsolete = seq.select(edges, function(_arg) {
       var e, eid;
       eid = _arg[0], e = _arg[1];
       return __indexOf.call(e, pid) >= 0;

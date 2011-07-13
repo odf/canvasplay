@@ -1,6 +1,5 @@
 $ = jQuery
 
-Seq      = pazy.Sequence
 sites    = new  pazy.IntMap()
 delaunay = pazy.delaunayTriangulation()
 center   = pazy.circumCircleCenter
@@ -16,16 +15,13 @@ moved      = false
 down       = false
 
 
-seq = (args...) -> new Seq args
-
 nextId = do -> last = 0; -> last += 1
 
 square = (x) -> x * x
 
 distance = ([x1, y1], [x2, y2]) -> Math.sqrt square(x2 - x1) + square(y2 - y1)
 
-findSite = (x, y) ->
-  Seq.find(sites, ([id, p]) -> distance([x, y], p) < 10)?[0]
+findSite = (x, y) -> seq.find(sites, ([id, p]) -> distance([x, y], p) < 10)?[0]
 
 newSite = (x, y) ->
   id = nextId()
@@ -52,9 +48,9 @@ farPoint = (triangulation, a, b, s) ->
   s.plus new Point(d...).times f
 
 drawVoronoi = (context, triangulation) ->
-  Seq.each triangulation, (triangle) ->
+  seq.each triangulation, (triangle) ->
     [a, b, c] = triangle.vertices()
-    seq([a, b], [b, c], [c, a]).each ([u, v]) ->
+    seq.each [[a, b], [b, c], [c, a]], ([u, v]) ->
       if u < v or triangulation.third(v, u) < 0
         t = triangulation.third u, v
         w = triangulation.third v, u
@@ -75,7 +71,7 @@ drawVoronoi = (context, triangulation) ->
         context.stroke()
 
 drawCenters = (context, triangulation) ->
-  Seq.each triangulation, (t) ->
+  seq.each triangulation, (t) ->
     [s, r] = circleSpecs triangulation, t.vertices()...
     context.beginPath()
     context.arc s.x, s.y, 3, 0, Math.PI * 2, true
@@ -85,7 +81,7 @@ drawCenters = (context, triangulation) ->
     context.stroke()
 
 drawCircles = (context, triangulation) ->
-  Seq.each triangulation, (t) ->
+  seq.each triangulation, (t) ->
     [s, r] = circleSpecs triangulation, t.vertices()...
     context.beginPath()
     context.arc s.x, s.y, r, 0, Math.PI * 2, true
@@ -93,9 +89,9 @@ drawCircles = (context, triangulation) ->
     context.stroke()
 
 drawEdges = (context, triangulation) ->
-  Seq.each triangulation, (triangle) ->
+  seq.each triangulation, (triangle) ->
     [a, b, c] = triangle.vertices()
-    seq([a, b], [b, c], [c, a]).each ([u, v]) ->
+    seq.each [[a, b], [b, c], [c, a]], ([u, v]) ->
       if u < v or triangulation.third(v, u) < 0
         p = triangulation.position u
         q = triangulation.position v
@@ -165,8 +161,8 @@ handlers =
     mouseup: (e) ->
       updateMouse e
       if moved
-        delaunay = Seq.reduce sites, new pazy.delaunayTriangulation(),
-          (t, [id, [x, y]]) -> t.plus new Point x, y
+        empty = new pazy.delaunayTriangulation()
+        delaunay = seq(sites).map(([id, [x, y]]) -> new Point x, y).into empty
       source = null
       down = moved = false
       draw()

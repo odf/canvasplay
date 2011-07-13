@@ -1,6 +1,5 @@
 $ = jQuery
 
-Seq        = pazy.Sequence
 vertices   = new pazy.IntMap()
 edges      = new pazy.IntMap()
 
@@ -43,10 +42,10 @@ distFromEdge = (p, e) -> distFromVertex p, nearestOnEdge p, e
 
 
 findVertex = (x, y) ->
-  Seq.find(vertices, ([id, p]) -> distFromVertex([x, y], p) < 10)?[0]
+  seq.find(vertices, ([id, p]) -> distFromVertex([x, y], p) < 10)?[0]
 
 findEdge = (x, y) ->
-  Seq.find(edges, ([id, e]) -> distFromEdge([x, y], e) < 10)?[0]
+  seq.find(edges, ([id, e]) -> distFromEdge([x, y], e) < 10)?[0]
 
 newVertex = (x, y) ->
   id = nextId()
@@ -59,7 +58,7 @@ newEdge = (from, to) ->
   id
 
 deleteVertex = (pid) ->
-  obsolete = Seq.select edges, ([eid, e]) -> pid in e
+  obsolete = seq.select edges, ([eid, e]) -> pid in e
   edges = edges.minusAll obsolete?.map ([eid, ends]) -> eid
   vertices = vertices.minus pid
 

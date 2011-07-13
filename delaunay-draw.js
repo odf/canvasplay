@@ -1,8 +1,7 @@
 (function() {
-  var $, Point, Seq, active, canvas, center, circleSpecs, ctx, debounce, delaunay, distance, down, draw, drawCenters, drawCircles, drawEdges, drawSites, drawVoronoi, farPoint, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle, updateMouse;
+  var $, Point, active, canvas, center, circleSpecs, ctx, debounce, delaunay, distance, down, draw, drawCenters, drawCircles, drawEdges, drawSites, drawVoronoi, farPoint, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, siteAt, sites, source, square, throttle, updateMouse;
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   $ = jQuery;
-  Seq = pazy.Sequence;
   sites = new pazy.IntMap();
   delaunay = pazy.delaunayTriangulation();
   center = pazy.circumCircleCenter;
@@ -13,11 +12,6 @@
   active = null;
   moved = false;
   down = false;
-  seq = function() {
-    var args;
-    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-    return new Seq(args);
-  };
   nextId = (function() {
     var last;
     last = 0;
@@ -36,7 +30,7 @@
   };
   findSite = function(x, y) {
     var _ref;
-    return (_ref = Seq.find(sites, function(_arg) {
+    return (_ref = seq.find(sites, function(_arg) {
       var id, p;
       id = _arg[0], p = _arg[1];
       return distance([x, y], p) < 10;
@@ -76,10 +70,10 @@
     })(Point, d, function() {}).times(f));
   };
   drawVoronoi = function(context, triangulation) {
-    return Seq.each(triangulation, function(triangle) {
+    return seq.each(triangulation, function(triangle) {
       var a, b, c, _ref;
       _ref = triangle.vertices(), a = _ref[0], b = _ref[1], c = _ref[2];
-      return seq([a, b], [b, c], [c, a]).each(function(_arg) {
+      return seq.each([[a, b], [b, c], [c, a]], function(_arg) {
         var r1, r2, s1, s2, t, u, v, w, _ref2, _ref3, _ref4, _ref5;
         u = _arg[0], v = _arg[1];
         if (u < v || triangulation.third(v, u) < 0) {
@@ -105,7 +99,7 @@
     });
   };
   drawCenters = function(context, triangulation) {
-    return Seq.each(triangulation, function(t) {
+    return seq.each(triangulation, function(t) {
       var r, s, _ref;
       _ref = circleSpecs.apply(null, [triangulation].concat(__slice.call(t.vertices()))), s = _ref[0], r = _ref[1];
       context.beginPath();
@@ -117,7 +111,7 @@
     });
   };
   drawCircles = function(context, triangulation) {
-    return Seq.each(triangulation, function(t) {
+    return seq.each(triangulation, function(t) {
       var r, s, _ref;
       _ref = circleSpecs.apply(null, [triangulation].concat(__slice.call(t.vertices()))), s = _ref[0], r = _ref[1];
       context.beginPath();
@@ -127,10 +121,10 @@
     });
   };
   drawEdges = function(context, triangulation) {
-    return Seq.each(triangulation, function(triangle) {
+    return seq.each(triangulation, function(triangle) {
       var a, b, c, _ref;
       _ref = triangle.vertices(), a = _ref[0], b = _ref[1], c = _ref[2];
-      return seq([a, b], [b, c], [c, a]).each(function(_arg) {
+      return seq.each([[a, b], [b, c], [c, a]], function(_arg) {
         var p, q, u, v;
         u = _arg[0], v = _arg[1];
         if (u < v || triangulation.third(v, u) < 0) {
@@ -218,13 +212,15 @@
         return draw();
       },
       mouseup: function(e) {
+        var empty;
         updateMouse(e);
         if (moved) {
-          delaunay = Seq.reduce(sites, new pazy.delaunayTriangulation(), function(t, _arg) {
+          empty = new pazy.delaunayTriangulation();
+          delaunay = seq(sites).map(function(_arg) {
             var id, x, y, _ref;
             id = _arg[0], _ref = _arg[1], x = _ref[0], y = _ref[1];
-            return t.plus(new Point(x, y));
-          });
+            return new Point(x, y);
+          }).into(empty);
         }
         source = null;
         down = moved = false;
