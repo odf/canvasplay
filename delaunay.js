@@ -364,7 +364,8 @@
           }).join(', '));
           console.log(seq.join(s, ', '));
           console.log(p);
-          throw ex;
+          console.log(ex.stacktrace);
+          throw "Oops!";
         }
       });
     });
