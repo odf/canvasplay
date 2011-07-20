@@ -33,16 +33,11 @@ moveSite = (pid, x, y) -> sites = sites.plus [pid, [x, y]]
 
 siteAt = (x, y) -> findSite(x, y) or newSite(x, y)
 
-circleSpecs = (triangulation, a, b, c) ->
-  u = triangulation.position a
-  v = triangulation.position b
-  w = triangulation.position c
+circleSpecs = (triangulation, u, v, w) ->
   s = circumCircleCenter u, v, w
   [s, distance [u.x, u.y], [s.x, s.y]]
 
-farPoint = (triangulation, a, b, s) ->
-  u = triangulation.position a
-  v = triangulation.position b
+farPoint = (triangulation, u, v, s) ->
   d = [v.y - u.y, u.x - v.x]
   f = 2000.0 / distance d, [0, 0]
   s.plus new Point2d(d...).times f
@@ -51,13 +46,13 @@ drawVoronoi = (context, triangulation) ->
   seq.each triangulation, (triangle) ->
     [a, b, c] = triangle.vertices()
     seq.each [[a, b], [b, c], [c, a]], ([u, v]) ->
-      if u < v or triangulation.third(v, u) < 0
+      if u.toString() < v.toString() or triangulation.third(v, u).isInfinite()
         t = triangulation.third u, v
         w = triangulation.third v, u
-        if t >= 0 and w >= 0
+        if not (t.isInfinite() or w.isInfinite())
           [s1, r1] = circleSpecs triangulation, t, u, v
           [s2, r2] = circleSpecs triangulation, w, v, u
-        else if t < 0
+        else if t.isInfinite()
           [s1, r1] = circleSpecs triangulation, w, v, u
           s2 = farPoint triangulation, v, u, s1
         else
@@ -92,12 +87,10 @@ drawEdges = (context, triangulation) ->
   seq.each triangulation, (triangle) ->
     [a, b, c] = triangle.vertices()
     seq.each [[a, b], [b, c], [c, a]], ([u, v]) ->
-      if u < v or triangulation.third(v, u) < 0
-        p = triangulation.position u
-        q = triangulation.position v
+      if u.toString() < v.toString() or triangulation.third(v, u).isInfinite()
         context.beginPath()
-        context.moveTo p.x, p.y
-        context.lineTo q.x, q.y
+        context.moveTo u.x, u.y
+        context.lineTo v.x, v.y
         context.strokeStyle = 'black'
         context.stroke()
 

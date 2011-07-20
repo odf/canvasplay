@@ -48,18 +48,13 @@
   siteAt = function(x, y) {
     return findSite(x, y) || newSite(x, y);
   };
-  circleSpecs = function(triangulation, a, b, c) {
-    var s, u, v, w;
-    u = triangulation.position(a);
-    v = triangulation.position(b);
-    w = triangulation.position(c);
+  circleSpecs = function(triangulation, u, v, w) {
+    var s;
     s = circumCircleCenter(u, v, w);
     return [s, distance([u.x, u.y], [s.x, s.y])];
   };
-  farPoint = function(triangulation, a, b, s) {
-    var d, f, u, v;
-    u = triangulation.position(a);
-    v = triangulation.position(b);
+  farPoint = function(triangulation, u, v, s) {
+    var d, f;
     d = [v.y - u.y, u.x - v.x];
     f = 2000.0 / distance(d, [0, 0]);
     return s.plus((function(func, args, ctor) {
@@ -75,13 +70,13 @@
       return seq.each([[a, b], [b, c], [c, a]], function(_arg) {
         var r1, r2, s1, s2, t, u, v, w, _ref2, _ref3, _ref4, _ref5;
         u = _arg[0], v = _arg[1];
-        if (u < v || triangulation.third(v, u) < 0) {
+        if (u.toString() < v.toString() || triangulation.third(v, u).isInfinite()) {
           t = triangulation.third(u, v);
           w = triangulation.third(v, u);
-          if (t >= 0 && w >= 0) {
+          if (!(t.isInfinite() || w.isInfinite())) {
             _ref2 = circleSpecs(triangulation, t, u, v), s1 = _ref2[0], r1 = _ref2[1];
             _ref3 = circleSpecs(triangulation, w, v, u), s2 = _ref3[0], r2 = _ref3[1];
-          } else if (t < 0) {
+          } else if (t.isInfinite()) {
             _ref4 = circleSpecs(triangulation, w, v, u), s1 = _ref4[0], r1 = _ref4[1];
             s2 = farPoint(triangulation, v, u, s1);
           } else {
@@ -124,14 +119,12 @@
       var a, b, c, _ref;
       _ref = triangle.vertices(), a = _ref[0], b = _ref[1], c = _ref[2];
       return seq.each([[a, b], [b, c], [c, a]], function(_arg) {
-        var p, q, u, v;
+        var u, v;
         u = _arg[0], v = _arg[1];
-        if (u < v || triangulation.third(v, u) < 0) {
-          p = triangulation.position(u);
-          q = triangulation.position(v);
+        if (u.toString() < v.toString() || triangulation.third(v, u).isInfinite()) {
           context.beginPath();
-          context.moveTo(p.x, p.y);
-          context.lineTo(q.x, q.y);
+          context.moveTo(u.x, u.y);
+          context.lineTo(v.x, v.y);
           context.strokeStyle = 'black';
           return context.stroke();
         }
