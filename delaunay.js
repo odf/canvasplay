@@ -146,7 +146,7 @@
         }
       };
       Triangulation.prototype.plus = function(a, b, c) {
-        var f, g, h, third, triangles, x, _ref5;
+        var f, g, h, third, triangles, x;
         if (this.find(a, b, c)) {
           return this;
         } else if (x = seq([[a, b], [b, c], [c, a]]).find(__bind(function(e) {
@@ -154,7 +154,10 @@
         }, this))) {
           f = x[0], g = x[1];
           h = this.third__.get(x);
-          trace("  Error in plus [" + ((_ref5 = this.toSeq()) != null ? _ref5.join(', ') : void 0) + "], (" + a + ", " + b + ", " + c + ")");
+          trace(function() {
+            var _ref5;
+            return "  Error in plus [" + ((_ref5 = this.toSeq()) != null ? _ref5.join(', ') : void 0) + "], (" + a + ", " + b + ", " + c + ")";
+          });
           throw new Error("Orientation mismatch.");
         } else {
           triangles = this.triangles__.plus(tri(a, b, c));
@@ -264,13 +267,17 @@
       };
       subdivide = function(T, t, p) {
         var a, b, c, _ref5;
-        trace("subdivide [" + (T.triangulation__.toSeq().join(', ')) + "], " + t + ", " + p);
+        trace(function() {
+          return "subdivide [" + (T.triangulation__.toSeq().join(', ')) + "], " + t + ", " + p;
+        });
         _ref5 = t.vertices(), a = _ref5[0], b = _ref5[1], c = _ref5[2];
         return new T.constructor(T.triangulation__.minus(a, b, c).plus(a, b, p).plus(b, c, p).plus(c, a, p), T.sites__.plus(p), T.children__.plus([T.find(a, b, c), seq([tri(a, b, p), tri(b, c, p), tri(c, a, p)])]));
       };
       flip = function(T, a, b) {
         var c, children, d;
-        trace("flip [" + (T.triangulation__.toSeq().join(', ')) + "], " + a + ", " + b);
+        trace(function() {
+          return "flip [" + (T.triangulation__.toSeq().join(', ')) + "], " + a + ", " + b;
+        });
         c = T.third(a, b);
         d = T.third(b, a);
         children = seq([tri(b, c, d), tri(a, d, c)]);
