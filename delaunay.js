@@ -197,13 +197,14 @@
         this.triangulation__ = args[0] || triangulation(outer.vertices());
         this.sites__ = args[1] || new HashSet();
         this.children__ = args[2] || new HashMap();
-      }
-      Triangulation.prototype.toSeq = function() {
-        return seq.select(this.triangulation__, function(t) {
+        this.triangles__ = seq.select(this.triangulation__, function(t) {
           return seq.forall(t, function(p) {
             return !p.isInfinite();
           });
         });
+      }
+      Triangulation.prototype.toSeq = function() {
+        return this.triangles__;
       };
       Triangulation.prototype.third = function(a, b) {
         return this.triangulation__.third(a, b);
