@@ -33,11 +33,11 @@ moveSite = (pid, x, y) -> sites = sites.plus [pid, [x, y]]
 
 siteAt = (x, y) -> findSite(x, y) or newSite(x, y)
 
-circleSpecs = (triangulation, u, v, w) ->
-  s = new Triangle(u, v, w).circumCircleCenter()
-  [s, distance [u.x, u.y], [s.x, s.y]]
+circleSpecs = (u, v, w) ->
+  t = new Triangle u, v, w
+  [t.circumCircleCenter(), t.circumCircleRadius()]
 
-farPoint = (triangulation, u, v, s) ->
+farPoint = (u, v, s) ->
   d = [v.y - u.y, u.x - v.x]
   f = 2000.0 / distance d, [0, 0]
   s.plus new Point2d(d...).times f
@@ -50,14 +50,14 @@ drawVoronoi = (context, triangulation) ->
         t = triangulation.third u, v
         w = triangulation.third v, u
         if not (t.isInfinite() or w.isInfinite())
-          [s1, r1] = circleSpecs triangulation, t, u, v
-          [s2, r2] = circleSpecs triangulation, w, v, u
+          [s1, r1] = circleSpecs t, u, v
+          [s2, r2] = circleSpecs w, v, u
         else if t.isInfinite()
-          [s1, r1] = circleSpecs triangulation, w, v, u
-          s2 = farPoint triangulation, v, u, s1
+          [s1, r1] = circleSpecs w, v, u
+          s2 = farPoint v, u, s1
         else
-          [s1, r1] = circleSpecs triangulation, t, u, v
-          s2 = farPoint triangulation, u, v, s1
+          [s1, r1] = circleSpecs t, u, v
+          s2 = farPoint u, v, s1
 
         context.beginPath()
         context.moveTo s1.x, s1.y
@@ -67,7 +67,7 @@ drawVoronoi = (context, triangulation) ->
 
 drawCenters = (context, triangulation) ->
   seq.each triangulation, (t) ->
-    [s, r] = circleSpecs triangulation, t.vertices()...
+    s = t.circumCircleCenter()
     context.beginPath()
     context.arc s.x, s.y, 3, 0, Math.PI * 2, true
     context.fillStyle = 'rgb(200, 255, 0)'
@@ -77,7 +77,8 @@ drawCenters = (context, triangulation) ->
 
 drawCircles = (context, triangulation) ->
   seq.each triangulation, (t) ->
-    [s, r] = circleSpecs triangulation, t.vertices()...
+    s = t.circumCircleCenter()
+    r = t.circumCircleRadius()
     context.beginPath()
     context.arc s.x, s.y, r, 0, Math.PI * 2, true
     context.strokeStyle = 'rgb(200, 255, 200)'

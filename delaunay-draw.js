@@ -48,12 +48,12 @@
   siteAt = function(x, y) {
     return findSite(x, y) || newSite(x, y);
   };
-  circleSpecs = function(triangulation, u, v, w) {
-    var s;
-    s = new Triangle(u, v, w).circumCircleCenter();
-    return [s, distance([u.x, u.y], [s.x, s.y])];
+  circleSpecs = function(u, v, w) {
+    var t;
+    t = new Triangle(u, v, w);
+    return [t.circumCircleCenter(), t.circumCircleRadius()];
   };
-  farPoint = function(triangulation, u, v, s) {
+  farPoint = function(u, v, s) {
     var d, f;
     d = [v.y - u.y, u.x - v.x];
     f = 2000.0 / distance(d, [0, 0]);
@@ -74,14 +74,14 @@
           t = triangulation.third(u, v);
           w = triangulation.third(v, u);
           if (!(t.isInfinite() || w.isInfinite())) {
-            _ref2 = circleSpecs(triangulation, t, u, v), s1 = _ref2[0], r1 = _ref2[1];
-            _ref3 = circleSpecs(triangulation, w, v, u), s2 = _ref3[0], r2 = _ref3[1];
+            _ref2 = circleSpecs(t, u, v), s1 = _ref2[0], r1 = _ref2[1];
+            _ref3 = circleSpecs(w, v, u), s2 = _ref3[0], r2 = _ref3[1];
           } else if (t.isInfinite()) {
-            _ref4 = circleSpecs(triangulation, w, v, u), s1 = _ref4[0], r1 = _ref4[1];
-            s2 = farPoint(triangulation, v, u, s1);
+            _ref4 = circleSpecs(w, v, u), s1 = _ref4[0], r1 = _ref4[1];
+            s2 = farPoint(v, u, s1);
           } else {
-            _ref5 = circleSpecs(triangulation, t, u, v), s1 = _ref5[0], r1 = _ref5[1];
-            s2 = farPoint(triangulation, u, v, s1);
+            _ref5 = circleSpecs(t, u, v), s1 = _ref5[0], r1 = _ref5[1];
+            s2 = farPoint(u, v, s1);
           }
           context.beginPath();
           context.moveTo(s1.x, s1.y);
@@ -94,8 +94,8 @@
   };
   drawCenters = function(context, triangulation) {
     return seq.each(triangulation, function(t) {
-      var r, s, _ref;
-      _ref = circleSpecs.apply(null, [triangulation].concat(__slice.call(t.vertices()))), s = _ref[0], r = _ref[1];
+      var s;
+      s = t.circumCircleCenter();
       context.beginPath();
       context.arc(s.x, s.y, 3, 0, Math.PI * 2, true);
       context.fillStyle = 'rgb(200, 255, 0)';
@@ -106,8 +106,9 @@
   };
   drawCircles = function(context, triangulation) {
     return seq.each(triangulation, function(t) {
-      var r, s, _ref;
-      _ref = circleSpecs.apply(null, [triangulation].concat(__slice.call(t.vertices()))), s = _ref[0], r = _ref[1];
+      var r, s;
+      s = t.circumCircleCenter();
+      r = t.circumCircleRadius();
       context.beginPath();
       context.arc(s.x, s.y, r, 0, Math.PI * 2, true);
       context.strokeStyle = 'rgb(200, 255, 200)';

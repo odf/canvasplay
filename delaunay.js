@@ -122,6 +122,14 @@
         return new Point2d(n.x, n.y).times(-0.5 / n.z);
       }
     });
+    memo(Triangle, 'circumCircleRadius', function() {
+      var c, square;
+      c = this.circumCircleCenter();
+      square = function(x) {
+        return x * x;
+      };
+      return Math.sqrt(square(c.x - this.a.x) + square(c.y - this.a.y));
+    });
     Triangle.prototype.inclusionInCircumCircle = function(d) {
       return this.liftedNormal().dot(d.lift().minus(this.a.lift()));
     };
