@@ -1,5 +1,5 @@
 (function() {
-  var HashMap, HashSet, IntMap, Point2d, Point3d, PointAtInfinity, Queue, Triangle, args, delaunayTriangulation, equal, hashCode, memo, recur, resolve, seq, test, trace, tri, triangulation, _ref, _ref2, _ref3, _ref4, _ref5, _ref6;
+  var HashMap, HashSet, IntMap, Point2d, Point3d, PointAtInfinity, Queue, Triangle, args, delaunayTriangulation, equal, hashCode, memo, recur, resolve, seq, test, trace, triangulation, _ref, _ref2, _ref3, _ref4, _ref5, _ref6;
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __slice = Array.prototype.slice;
   if (typeof require !== 'undefined') {
     require.paths.unshift('#{__dirname}/../lib');
@@ -147,9 +147,6 @@
     };
     return Triangle;
   })();
-  tri = function(a, b, c) {
-    return new Triangle(a, b, c);
-  };
   triangulation = (function() {
     var Triangulation;
     Triangulation = (function() {
@@ -188,7 +185,7 @@
         }, this))) {
           throw new Error("Orientation mismatch.");
         } else {
-          t = tri(a, b, c);
+          t = new Triangle(a, b, c);
           added = [[[a, b], [t, c]], [[b, c], [t, a]], [[c, a], [t, b]]];
           return new Triangulation(this.third__.plusAll(added));
         }
@@ -214,7 +211,7 @@
     var Triangulation;
     Triangulation = (function() {
       var doFlips, flip, outer, subdivide;
-      outer = tri(new PointAtInfinity(1, 0), new PointAtInfinity(-1, 1), new PointAtInfinity(-1, -1));
+      outer = new Triangle(new PointAtInfinity(1, 0), new PointAtInfinity(-1, 1), new PointAtInfinity(-1, -1));
       function Triangulation() {
         var args;
         args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
@@ -290,22 +287,24 @@
         }
       };
       subdivide = function(T, t, p) {
-        var a, b, c, _ref5;
+        var S, a, b, c, _ref5;
         trace(function() {
           return "subdivide [" + (T.triangulation__.toSeq().join(', ')) + "], " + t + ", " + p;
         });
         _ref5 = t.vertices(), a = _ref5[0], b = _ref5[1], c = _ref5[2];
-        return new T.constructor(T.triangulation__.minus(a, b, c).plus(a, b, p).plus(b, c, p).plus(c, a, p), T.sites__.plus(p), T.children__.plus([tri(a, b, c), seq([tri(a, b, p), tri(b, c, p), tri(c, a, p)])]));
+        S = T.triangulation__.minus(a, b, c).plus(a, b, p).plus(b, c, p).plus(c, a, p);
+        return new T.constructor(S, T.sites__.plus(p), T.children__.plus([T.triangle(a, b), seq([S.triangle(a, b), S.triangle(b, c), S.triangle(c, a)])]));
       };
       flip = function(T, a, b) {
-        var c, children, d;
+        var S, c, children, d;
         trace(function() {
           return "flip [" + (T.triangulation__.toSeq().join(', ')) + "], " + a + ", " + b;
         });
         c = T.third(a, b);
         d = T.third(b, a);
-        children = seq([tri(b, c, d), tri(a, d, c)]);
-        return new T.constructor(T.triangulation__.minus(a, b, c).minus(b, a, d).plus(b, c, d).plus(a, d, c), T.sites__, T.children__.plus([tri(a, b, c), children], [tri(b, a, d), children]));
+        S = T.triangulation__.minus(a, b, c).minus(b, a, d).plus(b, c, d).plus(a, d, c);
+        children = seq([S.triangle(c, d), S.triangle(d, c)]);
+        return new T.constructor(S, T.sites__, T.children__.plus([T.triangle(a, b), children], [T.triangle(b, a), children]));
       };
       doFlips = function(T, stack) {
         var a, b, c, _ref5;
