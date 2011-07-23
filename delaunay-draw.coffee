@@ -1,6 +1,6 @@
 $ = jQuery
 
-{ IntMap, delaunayTriangulation, Point2d, Triangle, seq } = pazy
+{ IntMap, delaunayTriangulation, seq } = pazy
 
 sites    = new IntMap()
 delaunay = delaunayTriangulation()
@@ -33,14 +33,10 @@ moveSite = (pid, x, y) -> sites = sites.plus [pid, [x, y]]
 
 siteAt = (x, y) -> findSite(x, y) or newSite(x, y)
 
-circleSpecs = (u, v, w) ->
-  t = new Triangle u, v, w
-  [t.circumCircleCenter(), t.circumCircleRadius()]
-
 farPoint = (u, v, s) ->
   d = [v.y - u.y, u.x - v.x]
   f = 2000.0 / distance d, [0, 0]
-  s.plus new Point2d(d...).times f
+  s.plus new s.constructor(d...).times f
 
 drawVoronoi = (context, triangulation) ->
   seq.each triangulation, (triangle) ->
@@ -50,13 +46,13 @@ drawVoronoi = (context, triangulation) ->
         t = triangulation.third u, v
         w = triangulation.third v, u
         if not (t.isInfinite() or w.isInfinite())
-          [s1, r1] = circleSpecs t, u, v
-          [s2, r2] = circleSpecs w, v, u
+          s1 = triangulation.triangle(u, v).circumCircleCenter()
+          s2 = triangulation.triangle(v, u).circumCircleCenter()
         else if t.isInfinite()
-          [s1, r1] = circleSpecs w, v, u
+          s1 = triangulation.triangle(v, u).circumCircleCenter()
           s2 = farPoint v, u, s1
         else
-          [s1, r1] = circleSpecs t, u, v
+          s1 = triangulation.triangle(u, v).circumCircleCenter()
           s2 = farPoint u, v, s1
 
         context.beginPath()

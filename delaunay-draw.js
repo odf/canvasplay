@@ -1,8 +1,8 @@
 (function() {
-  var $, IntMap, Point2d, Triangle, active, canvas, circleSpecs, ctx, debounce, delaunay, delaunayTriangulation, distance, down, draw, drawCenters, drawCircles, drawEdges, drawSites, drawVoronoi, farPoint, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle, updateMouse;
+  var $, IntMap, active, canvas, ctx, debounce, delaunay, delaunayTriangulation, distance, down, draw, drawCenters, drawCircles, drawEdges, drawSites, drawVoronoi, farPoint, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle, updateMouse;
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   $ = jQuery;
-  IntMap = pazy.IntMap, delaunayTriangulation = pazy.delaunayTriangulation, Point2d = pazy.Point2d, Triangle = pazy.Triangle, seq = pazy.seq;
+  IntMap = pazy.IntMap, delaunayTriangulation = pazy.delaunayTriangulation, seq = pazy.seq;
   sites = new IntMap();
   delaunay = delaunayTriangulation();
   canvas = null;
@@ -48,11 +48,6 @@
   siteAt = function(x, y) {
     return findSite(x, y) || newSite(x, y);
   };
-  circleSpecs = function(u, v, w) {
-    var t;
-    t = new Triangle(u, v, w);
-    return [t.circumCircleCenter(), t.circumCircleRadius()];
-  };
   farPoint = function(u, v, s) {
     var d, f;
     d = [v.y - u.y, u.x - v.x];
@@ -61,26 +56,26 @@
       ctor.prototype = func.prototype;
       var child = new ctor, result = func.apply(child, args);
       return typeof result === "object" ? result : child;
-    })(Point2d, d, function() {}).times(f));
+    })(s.constructor, d, function() {}).times(f));
   };
   drawVoronoi = function(context, triangulation) {
     return seq.each(triangulation, function(triangle) {
       var a, b, c, _ref;
       _ref = triangle.vertices(), a = _ref[0], b = _ref[1], c = _ref[2];
       return seq.each([[a, b], [b, c], [c, a]], function(_arg) {
-        var r1, r2, s1, s2, t, u, v, w, _ref2, _ref3, _ref4, _ref5;
+        var s1, s2, t, u, v, w;
         u = _arg[0], v = _arg[1];
         if (u.toString() < v.toString() || triangulation.third(v, u).isInfinite()) {
           t = triangulation.third(u, v);
           w = triangulation.third(v, u);
           if (!(t.isInfinite() || w.isInfinite())) {
-            _ref2 = circleSpecs(t, u, v), s1 = _ref2[0], r1 = _ref2[1];
-            _ref3 = circleSpecs(w, v, u), s2 = _ref3[0], r2 = _ref3[1];
+            s1 = triangulation.triangle(u, v).circumCircleCenter();
+            s2 = triangulation.triangle(v, u).circumCircleCenter();
           } else if (t.isInfinite()) {
-            _ref4 = circleSpecs(w, v, u), s1 = _ref4[0], r1 = _ref4[1];
+            s1 = triangulation.triangle(v, u).circumCircleCenter();
             s2 = farPoint(v, u, s1);
           } else {
-            _ref5 = circleSpecs(t, u, v), s1 = _ref5[0], r1 = _ref5[1];
+            s1 = triangulation.triangle(u, v).circumCircleCenter();
             s2 = farPoint(u, v, s1);
           }
           context.beginPath();

@@ -159,20 +159,26 @@
       memo(Triangulation, 'toSeq', function() {
         var good;
         good = seq.select(this.third__, function(_arg) {
-          var a, b, c, _ref5;
-          _ref5 = _arg[0], a = _ref5[0], b = _ref5[1], c = _arg[1];
-          return a.toString() < b.toString() && a.toString() < c.toString();
+          var c, e, t, _ref5;
+          e = _arg[0], _ref5 = _arg[1], t = _ref5[0], c = _ref5[1];
+          return equal(c, t.a);
         });
         return seq.map(good, function(_arg) {
-          var a, b, c, _ref5;
-          _ref5 = _arg[0], a = _ref5[0], b = _ref5[1], c = _arg[1];
-          return tri(a, b, c);
+          var c, e, t, _ref5;
+          e = _arg[0], _ref5 = _arg[1], t = _ref5[0], c = _ref5[1];
+          return t;
         });
       });
       Triangulation.prototype.third = function(a, b) {
-        return this.third__.get([a, b]);
+        var _ref5;
+        return (_ref5 = this.third__.get([a, b])) != null ? _ref5[1] : void 0;
+      };
+      Triangulation.prototype.triangle = function(a, b) {
+        var _ref5;
+        return (_ref5 = this.third__.get([a, b])) != null ? _ref5[0] : void 0;
       };
       Triangulation.prototype.plus = function(a, b, c) {
+        var added, t;
         if (equal(this.third(a, b), c)) {
           return this;
         } else if (seq.find([[a, b], [b, c], [c, a]], __bind(function(_arg) {
@@ -182,7 +188,9 @@
         }, this))) {
           throw new Error("Orientation mismatch.");
         } else {
-          return new Triangulation(this.third__.plusAll([[[a, b], c], [[b, c], a], [[c, a], b]]));
+          t = tri(a, b, c);
+          added = [[[a, b], [t, c]], [[b, c], [t, a]], [[c, a], [t, b]]];
+          return new Triangulation(this.third__.plusAll(added));
         }
       };
       Triangulation.prototype.minus = function(a, b, c) {
@@ -223,6 +231,9 @@
       });
       Triangulation.prototype.third = function(a, b) {
         return this.triangulation__.third(a, b);
+      };
+      Triangulation.prototype.triangle = function(a, b) {
+        return this.triangulation__.triangle(a, b);
       };
       Triangulation.prototype.sideOf = function(a, b, p) {
         var ab, ap;
@@ -275,7 +286,7 @@
         } else if (c.isInfinite() || d.isInfinite()) {
           return false;
         } else {
-          return tri(a, b, c).inclusionInCircumCircle(d) > 0;
+          return this.triangle(a, b).inclusionInCircumCircle(d) > 0;
         }
       };
       subdivide = function(T, t, p) {
