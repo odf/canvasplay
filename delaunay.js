@@ -1,5 +1,5 @@
 (function() {
-  var HashMap, HashSet, IntMap, Point2d, Point3d, PointAtInfinity, Queue, Triangle, args, circumCircleCenter, delaunayTriangulation, equal, hashCode, inclusionInCircumCircle, lift, liftedNormal, recur, resolve, seq, test, trace, tri, triangulation, unlift, _ref, _ref2, _ref3, _ref4, _ref5, _ref6;
+  var HashMap, HashSet, IntMap, Point2d, Point3d, PointAtInfinity, Queue, Triangle, args, circumCircleCenter, delaunayTriangulation, equal, hashCode, inclusionInCircumCircle, lift, liftedNormal, memo, recur, resolve, seq, test, trace, tri, triangulation, unlift, _ref, _ref2, _ref3, _ref4, _ref5, _ref6;
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   if (typeof require !== 'undefined') {
     require.paths.unshift('#{__dirname}/../lib');
@@ -12,6 +12,15 @@
     _ref4 = this.pazy, equal = _ref4.equal, hashCode = _ref4.hashCode, recur = _ref4.recur, resolve = _ref4.resolve, seq = _ref4.seq, IntMap = _ref4.IntMap, HashSet = _ref4.HashSet, HashMap = _ref4.HashMap, Queue = _ref4.Queue;
   }
   trace = function(s) {};
+  memo = function(klass, name, f) {
+    return klass.prototype[name] = function() {
+      var x;
+      x = f.call(this);
+      return (this[name] = function() {
+        return x;
+      })();
+    };
+  };
   Point2d = (function() {
     function Point2d(x, y) {
       this.x = x;
@@ -29,12 +38,15 @@
     Point2d.prototype.times = function(f) {
       return new Point2d(this.x * f, this.y * f);
     };
-    Point2d.prototype.toString = function() {
-      return "(" + this.x + ", " + this.y + ")";
-    };
     Point2d.prototype.equals = function(p) {
       return this.constructor === p.constructor && this.x === p.x && this.y === p.y;
     };
+    memo(Point2d, 'toString', function() {
+      return "(" + this.x + ", " + this.y + ")";
+    });
+    memo(Point2d, 'hashCode', function() {
+      return hashCode(this.toString());
+    });
     return Point2d;
   })();
   PointAtInfinity = (function() {
@@ -45,12 +57,15 @@
     PointAtInfinity.prototype.isInfinite = function() {
       return true;
     };
-    PointAtInfinity.prototype.toString = function() {
-      return "inf(" + this.x + ", " + this.y + ")";
-    };
     PointAtInfinity.prototype.equals = function(p) {
       return this.constructor === p.constructor && this.x === p.x && this.y === p.y;
     };
+    memo(PointAtInfinity, 'toString', function() {
+      return "inf(" + this.x + ", " + this.y + ")";
+    });
+    memo(PointAtInfinity, 'hashCode', function() {
+      return hashCode(this.toString());
+    });
     return PointAtInfinity;
   })();
   Point3d = (function() {
@@ -81,17 +96,20 @@
       }).into([]), as = _ref5[0], bs = _ref5[1], cs = _ref5[2];
       _ref6 = as < bs && as < cs ? [a, b, c] : bs < cs ? [b, c, a] : [c, a, b], this.a = _ref6[0], this.b = _ref6[1], this.c = _ref6[2];
     }
-    Triangle.prototype.vertices = function() {
+    memo(Triangle, 'vertices', function() {
       return [this.a, this.b, this.c];
-    };
-    Triangle.prototype.toSeq = function() {
-      return seq([this.a, this.b, this.c]);
-    };
+    });
+    memo(Triangle, 'toSeq', function() {
+      return seq(this.vertices());
+    });
+    memo(Triangle, 'toString', function() {
+      return "T(" + this.a + ", " + this.b + ", " + this.c + ")";
+    });
+    memo(Triangle, 'hashCode', function() {
+      return hashCode(this.toString());
+    });
     Triangle.prototype.equals = function(other) {
       return equal(this.a, other.a) && equal(this.b, other.b) && equal(this.c, other.c);
-    };
-    Triangle.prototype.toString = function() {
-      return "T(" + this.a + ", " + this.b + ", " + this.c + ")";
     };
     return Triangle;
   })();
@@ -132,9 +150,9 @@
         this.triangles__ = args[0] || new HashSet();
         this.third__ = args[1] || new HashMap();
       }
-      Triangulation.prototype.toSeq = function() {
+      memo(Triangulation, 'toSeq', function() {
         return this.triangles__.toSeq();
-      };
+      });
       Triangulation.prototype.third = function(a, b) {
         return this.third__.get([a, b]);
       };
@@ -197,15 +215,14 @@
         this.triangulation__ = args[0] || triangulation(outer.vertices());
         this.sites__ = args[1] || new HashSet();
         this.children__ = args[2] || new HashMap();
-        this.triangles__ = seq.select(this.triangulation__, function(t) {
+      }
+      memo(Triangulation, 'toSeq', function() {
+        return seq.select(this.triangulation__, function(t) {
           return seq.forall(t, function(p) {
             return !p.isInfinite();
           });
         });
-      }
-      Triangulation.prototype.toSeq = function() {
-        return this.triangles__;
-      };
+      });
       Triangulation.prototype.third = function(a, b) {
         return this.triangulation__.third(a, b);
       };
