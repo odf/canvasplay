@@ -1,6 +1,6 @@
 $ = jQuery
 
-{ IntMap, delaunayTriangulation, circumCircleCenter, Point2d, seq } = pazy
+{ IntMap, delaunayTriangulation, Point2d, Triangle, seq } = pazy
 
 sites    = new IntMap()
 delaunay = delaunayTriangulation()
@@ -34,7 +34,7 @@ moveSite = (pid, x, y) -> sites = sites.plus [pid, [x, y]]
 siteAt = (x, y) -> findSite(x, y) or newSite(x, y)
 
 circleSpecs = (triangulation, u, v, w) ->
-  s = circumCircleCenter u, v, w
+  s = new Triangle(u, v, w).circumCircleCenter()
   [s, distance [u.x, u.y], [s.x, s.y]]
 
 farPoint = (triangulation, u, v, s) ->

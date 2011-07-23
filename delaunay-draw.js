@@ -1,8 +1,8 @@
 (function() {
-  var $, IntMap, Point2d, active, canvas, circleSpecs, circumCircleCenter, ctx, debounce, delaunay, delaunayTriangulation, distance, down, draw, drawCenters, drawCircles, drawEdges, drawSites, drawVoronoi, farPoint, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle, updateMouse;
+  var $, IntMap, Point2d, Triangle, active, canvas, circleSpecs, ctx, debounce, delaunay, delaunayTriangulation, distance, down, draw, drawCenters, drawCircles, drawEdges, drawSites, drawVoronoi, farPoint, findSite, handlers, limit, moveSite, moved, newSite, nextId, position, seq, siteAt, sites, source, square, throttle, updateMouse;
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   $ = jQuery;
-  IntMap = pazy.IntMap, delaunayTriangulation = pazy.delaunayTriangulation, circumCircleCenter = pazy.circumCircleCenter, Point2d = pazy.Point2d, seq = pazy.seq;
+  IntMap = pazy.IntMap, delaunayTriangulation = pazy.delaunayTriangulation, Point2d = pazy.Point2d, Triangle = pazy.Triangle, seq = pazy.seq;
   sites = new IntMap();
   delaunay = delaunayTriangulation();
   canvas = null;
@@ -50,7 +50,7 @@
   };
   circleSpecs = function(triangulation, u, v, w) {
     var s;
-    s = circumCircleCenter(u, v, w);
+    s = new Triangle(u, v, w).circumCircleCenter();
     return [s, distance([u.x, u.y], [s.x, s.y])];
   };
   farPoint = function(triangulation, u, v, s) {

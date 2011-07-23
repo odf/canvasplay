@@ -1,6 +1,6 @@
 (function() {
-  var HashMap, HashSet, IntMap, Point2d, Point3d, PointAtInfinity, Queue, Triangle, args, circumCircleCenter, delaunayTriangulation, equal, hashCode, inclusionInCircumCircle, lift, liftedNormal, memo, recur, resolve, seq, test, trace, tri, triangulation, unlift, _ref, _ref2, _ref3, _ref4, _ref5, _ref6;
-  var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  var HashMap, HashSet, IntMap, Point2d, Point3d, PointAtInfinity, Queue, Triangle, args, delaunayTriangulation, equal, hashCode, memo, recur, resolve, seq, test, trace, tri, triangulation, _ref, _ref2, _ref3, _ref4, _ref5, _ref6;
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __slice = Array.prototype.slice;
   if (typeof require !== 'undefined') {
     require.paths.unshift('#{__dirname}/../lib');
     _ref = require('core_extensions'), equal = _ref.equal, hashCode = _ref.hashCode;
@@ -38,8 +38,11 @@
     Point2d.prototype.times = function(f) {
       return new Point2d(this.x * f, this.y * f);
     };
+    memo(Point2d, 'lift', function() {
+      return new Point3d(this.x, this.y, this.x * this.x + this.y * this.y);
+    });
     Point2d.prototype.equals = function(p) {
-      return this.constructor === p.constructor && this.x === p.x && this.y === p.y;
+      return this.constructor === (p != null ? p.constructor : void 0) && this.x === p.x && this.y === p.y;
     };
     memo(Point2d, 'toString', function() {
       return "(" + this.x + ", " + this.y + ")";
@@ -58,7 +61,7 @@
       return true;
     };
     PointAtInfinity.prototype.equals = function(p) {
-      return this.constructor === p.constructor && this.x === p.x && this.y === p.y;
+      return this.constructor === (p != null ? p.constructor : void 0) && this.x === p.x && this.y === p.y;
     };
     memo(PointAtInfinity, 'toString', function() {
       return "inf(" + this.x + ", " + this.y + ")";
@@ -90,108 +93,95 @@
   })();
   Triangle = (function() {
     function Triangle(a, b, c) {
-      var as, bs, cs, _ref5, _ref6;
-      _ref5 = seq.map([a, b, c], function(x) {
-        return x.toString();
-      }).into([]), as = _ref5[0], bs = _ref5[1], cs = _ref5[2];
-      _ref6 = as < bs && as < cs ? [a, b, c] : bs < cs ? [b, c, a] : [c, a, b], this.a = _ref6[0], this.b = _ref6[1], this.c = _ref6[2];
+      this.a = a;
+      this.b = b;
+      this.c = c;
     }
     memo(Triangle, 'vertices', function() {
-      return [this.a, this.b, this.c];
+      if (this.a.toString() < this.b.toString() && this.a.toString() < this.c.toString()) {
+        return [this.a, this.b, this.c];
+      } else if (this.b.toString() < this.c.toString()) {
+        return [this.b, this.c, this.a];
+      } else {
+        return [this.c, this.a, this.b];
+      }
     });
+    memo(Triangle, 'liftedNormal', function() {
+      var n;
+      n = this.b.lift().minus(this.a.lift()).cross(this.c.lift().minus(this.a.lift()));
+      if (n.z <= 0) {
+        return n;
+      } else {
+        return n.times(-1);
+      }
+    });
+    memo(Triangle, 'circumCircleCenter', function() {
+      var n;
+      n = this.liftedNormal();
+      if (1e-6 < Math.abs(n.z)) {
+        return new Point2d(n.x, n.y).times(-0.5 / n.z);
+      }
+    });
+    Triangle.prototype.inclusionInCircumCircle = function(d) {
+      return this.liftedNormal().dot(d.lift().minus(this.a.lift()));
+    };
     memo(Triangle, 'toSeq', function() {
       return seq(this.vertices());
     });
     memo(Triangle, 'toString', function() {
-      return "T(" + this.a + ", " + this.b + ", " + this.c + ")";
+      return "T(" + (seq.join(this, ', ')) + ")";
     });
     memo(Triangle, 'hashCode', function() {
       return hashCode(this.toString());
     });
     Triangle.prototype.equals = function(other) {
-      return equal(this.a, other.a) && equal(this.b, other.b) && equal(this.c, other.c);
+      return seq.equals(this, other);
     };
     return Triangle;
   })();
   tri = function(a, b, c) {
     return new Triangle(a, b, c);
   };
-  lift = function(p) {
-    return new Point3d(p.x, p.y, p.x * p.x + p.y * p.y);
-  };
-  unlift = function(p) {
-    return new Point2d(p.x, p.y);
-  };
-  liftedNormal = function(a, b, c) {
-    var n;
-    n = lift(b).minus(lift(a)).cross(lift(c).minus(lift(a)));
-    if (n.z > 0) {
-      return n.times(-1);
-    } else {
-      return n;
-    }
-  };
-  circumCircleCenter = function(a, b, c) {
-    var n;
-    n = liftedNormal(a, b, c);
-    if (Math.abs(n.z) > 1e-6) {
-      return unlift(n.times(-0.5 / n.z));
-    }
-  };
-  inclusionInCircumCircle = function(a, b, c, d) {
-    return liftedNormal(a, b, c).dot(lift(d).minus(lift(a)));
-  };
   triangulation = (function() {
     var Triangulation;
     Triangulation = (function() {
-      function Triangulation() {
-        var args;
-        args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-        this.triangles__ = args[0] || new HashSet();
-        this.third__ = args[1] || new HashMap();
+      function Triangulation(third__) {
+        this.third__ = third__ != null ? third__ : new HashMap();
       }
       memo(Triangulation, 'toSeq', function() {
-        return this.triangles__.toSeq();
+        var good;
+        good = seq.select(this.third__, function(_arg) {
+          var a, b, c, _ref5;
+          _ref5 = _arg[0], a = _ref5[0], b = _ref5[1], c = _arg[1];
+          return a.toString() < b.toString() && a.toString() < c.toString();
+        });
+        return seq.map(good, function(_arg) {
+          var a, b, c, _ref5;
+          _ref5 = _arg[0], a = _ref5[0], b = _ref5[1], c = _arg[1];
+          return tri(a, b, c);
+        });
       });
       Triangulation.prototype.third = function(a, b) {
         return this.third__.get([a, b]);
       };
-      Triangulation.prototype.find = function(a, b, c) {
-        var t;
-        t = tri(a, b, c != null ? c : this.third(a, b));
-        if (this.triangles__.contains(t)) {
-          return t;
-        }
-      };
       Triangulation.prototype.plus = function(a, b, c) {
-        var f, g, h, third, triangles, x;
-        if (this.find(a, b, c)) {
+        if (equal(this.third(a, b), c)) {
           return this;
-        } else if (x = seq([[a, b], [b, c], [c, a]]).find(__bind(function(e) {
-          return this.third__.get(e) != null;
+        } else if (seq.find([[a, b], [b, c], [c, a]], __bind(function(_arg) {
+          var p, q;
+          p = _arg[0], q = _arg[1];
+          return this.third(p, q);
         }, this))) {
-          f = x[0], g = x[1];
-          h = this.third__.get(x);
-          trace(function() {
-            var _ref5;
-            return "  Error in plus [" + ((_ref5 = this.toSeq()) != null ? _ref5.join(', ') : void 0) + "], (" + a + ", " + b + ", " + c + ")";
-          });
           throw new Error("Orientation mismatch.");
         } else {
-          triangles = this.triangles__.plus(tri(a, b, c));
-          third = this.third__.plusAll(seq([[[a, b], c], [[b, c], a], [[c, a], b]]));
-          return new Triangulation(triangles, third);
+          return new Triangulation(this.third__.plusAll([[[a, b], c], [[b, c], a], [[c, a], b]]));
         }
       };
       Triangulation.prototype.minus = function(a, b, c) {
-        var t, third, triangles;
-        t = this.find(a, b, c);
-        if (t != null) {
-          triangles = this.triangles__.minus(t);
-          third = this.third__.minusAll(seq([[a, b], [b, c], [c, a]]));
-          return new Triangulation(triangles, third);
-        } else {
+        if (!equal(this.third(a, b), c)) {
           return this;
+        } else {
+          return new Triangulation(this.third__.minusAll([[a, b], [b, c], [c, a]]));
         }
       };
       return Triangulation;
@@ -225,9 +215,6 @@
       });
       Triangulation.prototype.third = function(a, b) {
         return this.triangulation__.third(a, b);
-      };
-      Triangulation.prototype.find = function(a, b, c) {
-        return this.triangulation__.find(a, b, c);
       };
       Triangulation.prototype.sideOf = function(a, b, p) {
         var ab, ap;
@@ -280,7 +267,7 @@
         } else if (c.isInfinite() || d.isInfinite()) {
           return false;
         } else {
-          return inclusionInCircumCircle(a, b, c, d) > 0;
+          return tri(a, b, c).inclusionInCircumCircle(d) > 0;
         }
       };
       subdivide = function(T, t, p) {
@@ -289,7 +276,7 @@
           return "subdivide [" + (T.triangulation__.toSeq().join(', ')) + "], " + t + ", " + p;
         });
         _ref5 = t.vertices(), a = _ref5[0], b = _ref5[1], c = _ref5[2];
-        return new T.constructor(T.triangulation__.minus(a, b, c).plus(a, b, p).plus(b, c, p).plus(c, a, p), T.sites__.plus(p), T.children__.plus([T.find(a, b, c), seq([tri(a, b, p), tri(b, c, p), tri(c, a, p)])]));
+        return new T.constructor(T.triangulation__.minus(a, b, c).plus(a, b, p).plus(b, c, p).plus(c, a, p), T.sites__.plus(p), T.children__.plus([tri(a, b, c), seq([tri(a, b, p), tri(b, c, p), tri(c, a, p)])]));
       };
       flip = function(T, a, b) {
         var c, children, d;
@@ -299,7 +286,7 @@
         c = T.third(a, b);
         d = T.third(b, a);
         children = seq([tri(b, c, d), tri(a, d, c)]);
-        return new T.constructor(T.triangulation__.minus(a, b, c).minus(b, a, d).plus(b, c, d).plus(a, d, c), T.sites__, T.children__.plus([T.find(a, b, c), children], [T.find(b, a, d), children]));
+        return new T.constructor(T.triangulation__.minus(a, b, c).minus(b, a, d).plus(b, c, d).plus(a, d, c), T.sites__, T.children__.plus([tri(a, b, c), children], [tri(b, a, d), children]));
       };
       doFlips = function(T, stack) {
         var a, b, c, _ref5;
@@ -358,9 +345,9 @@
   } else {
     exports = (_ref5 = this.pazy) != null ? _ref5 : this.pazy = {};
   };
+  exports.Triangle = Triangle;
   exports.Point2d = Point2d;
   exports.delaunayTriangulation = delaunayTriangulation;
-  exports.circumCircleCenter = circumCircleCenter;
   test = function(n, m) {
     if (n == null) {
       n = 100;
