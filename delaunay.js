@@ -1,15 +1,15 @@
 (function() {
-  var HashMap, HashSet, IntMap, Point2d, Point3d, PointAtInfinity, Queue, Triangle, args, delaunayTriangulation, equal, hashCode, memo, seq, test, trace, trampoline, triangulation, _ref, _ref2, _ref3, _ref4, _ref5;
+  var HashMap, HashSet, IntMap, Point2d, Point3d, PointAtInfinity, Queue, Triangle, args, bounce, delaunayTriangulation, equal, hashCode, memo, seq, test, trace, triangulation, _ref, _ref2, _ref3, _ref4, _ref5;
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; }, __slice = Array.prototype.slice;
   if (typeof require !== 'undefined') {
     require.paths.unshift('#{__dirname}/../lib');
     _ref = require('core_extensions'), equal = _ref.equal, hashCode = _ref.hashCode;
-    trampoline = require('functional').trampoline;
+    bounce = require('functional').bounce;
     seq = require('sequence').seq;
     _ref2 = require('indexed'), IntMap = _ref2.IntMap, HashSet = _ref2.HashSet, HashMap = _ref2.HashMap;
     Queue = require('queue').Queue;
   } else {
-    _ref3 = this.pazy, equal = _ref3.equal, hashCode = _ref3.hashCode, trampoline = _ref3.trampoline, seq = _ref3.seq, IntMap = _ref3.IntMap, HashSet = _ref3.HashSet, HashMap = _ref3.HashMap, Queue = _ref3.Queue;
+    _ref3 = this.pazy, equal = _ref3.equal, hashCode = _ref3.hashCode, bounce = _ref3.bounce, seq = _ref3.seq, IntMap = _ref3.IntMap, HashSet = _ref3.HashSet, HashMap = _ref3.HashMap, Queue = _ref3.Queue;
   }
   trace = function(s) {};
   memo = function(klass, name, f) {
@@ -267,7 +267,7 @@
             }, this);
           }
         }, this);
-        return trampoline(step(outer));
+        return bounce(step(outer));
       };
       Triangulation.prototype.mustFlip = function(a, b) {
         var c, d;
@@ -337,12 +337,12 @@
             if (T.sideOf(u, v, p) === 0) {
               w = T.third(u, v);
               if (w != null) {
-                return trampoline(doFlips(flip(T, u, v), seq([[u, w], [w, v]])));
+                return bounce(doFlips(flip(T, u, v), seq([[u, w], [w, v]])));
               } else {
                 return T;
               }
             } else {
-              return trampoline(doFlips(T, seq([[u, v]])));
+              return bounce(doFlips(T, seq([[u, v]])));
             }
           });
         }
